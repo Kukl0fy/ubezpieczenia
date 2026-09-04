@@ -2,20 +2,30 @@
 
 ## 1. Document status
 
-Status: **proposed baseline, pending repository audit**.
+Status: **baseline partially confirmed by BOOT-001 foundation**.
 
 This document defines the target architecture of the insurance-policy
 management application. It deliberately describes a small production system,
 not a general insurance platform.
 
-After the repository is provided and audited, this document must be updated
-with:
+### Confirmed by BOOT-001
 
-- the actual code and directory structure;
-- confirmed framework and dependency versions;
-- implemented versus planned components;
-- exact deployment model;
-- accepted deviations recorded as ADRs.
+- modular Django monolith with `config/` and `accounts/`
+- Python 3.13 and Django 5.2 LTS
+- PostgreSQL as the application database
+- local packaging with Docker Compose and `uv`
+- environment-based configuration
+- CI with pytest, Ruff, and migration checks
+
+### Still planned (not implemented)
+
+- domain modules: `customers`, `insurers`, `policies`, `notifications`,
+  `documents`, `audit`
+- server-rendered business UI, reminders, email, import/export
+- production deployment, HTTPS termination, backups, and monitoring
+- exact hosting vendor choices (to be recorded separately / as ADRs)
+
+Further updates should record accepted deviations as ADRs.
 
 ## 2. Product context
 
@@ -119,13 +129,18 @@ flowchart TD
 
 ### 5.2 Main technology choices
 
-Target choices, subject to repository audit:
+Confirmed for the foundation:
 
-- application: Django;
-- UI: Django templates with Bootstrap and optionally HTMX;
+- application: Django 5.2 LTS on Python 3.13;
 - production database: PostgreSQL;
-- application server: production WSGI/ASGI server appropriate to the project;
-- packaging: Docker;
+- packaging: Docker / Docker Compose for local development;
+- dependency management: `uv` (`pyproject.toml` + `uv.lock`).
+
+Still target / not yet implemented in code:
+
+- UI: Django templates with Bootstrap and optionally HTMX;
+- application server: production WSGI/ASGI server appropriate to the project
+  (local Compose uses Django `runserver` for development only);
 - scheduling: platform scheduler or cron invoking a Django management command;
 - email: transactional email provider or approved office SMTP relay;
 - files: private EU-region object storage, only if document upload is enabled;
