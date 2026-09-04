@@ -7,10 +7,40 @@ from unittest.mock import patch
 import pytest
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.db.utils import OperationalError
 from django.test import Client
 from django.urls import reverse
+
+from config.settings import require_env
+
+
+def test_require_env_returns_existing_nonempty_value(monkeypatch):
+    monkeypatch.setenv("BOOT_REQUIRED_TEST_VALUE", "configured-value")
+    assert require_env("BOOT_REQUIRED_TEST_VALUE") == "configured-value"
+
+
+def test_require_env_rejects_missing_value(monkeypatch):
+    monkeypatch.delenv("BOOT_REQUIRED_TEST_VALUE", raising=False)
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        require_env("BOOT_REQUIRED_TEST_VALUE")
+    assert "BOOT_REQUIRED_TEST_VALUE" in str(exc_info.value)
+    assert "configured-value" not in str(exc_info.value)
+
+
+def test_require_env_rejects_empty_value(monkeypatch):
+    monkeypatch.setenv("BOOT_REQUIRED_TEST_VALUE", "")
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        require_env("BOOT_REQUIRED_TEST_VALUE")
+    assert "BOOT_REQUIRED_TEST_VALUE" in str(exc_info.value)
+
+
+def test_require_env_rejects_whitespace_only_value(monkeypatch):
+    monkeypatch.setenv("BOOT_REQUIRED_TEST_VALUE", "   \t\n")
+    with pytest.raises(ImproperlyConfigured) as exc_info:
+        require_env("BOOT_REQUIRED_TEST_VALUE")
+    assert "BOOT_REQUIRED_TEST_VALUE" in str(exc_info.value)
 
 
 @pytest.mark.django_db

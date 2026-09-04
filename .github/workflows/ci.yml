@@ -56,6 +56,9 @@ jobs:
       - name: Check for missing migrations
         run: uv run python manage.py makemigrations --check --dry-run
 
+      - name: Run Django system checks
+        run: uv run python manage.py check
+
       - name: Run Ruff
         run: uv run ruff check .
 

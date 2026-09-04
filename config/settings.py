@@ -13,6 +13,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def require_env(name: str) -> str:
+    """Return a required environment variable with a non-empty value."""
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        raise ImproperlyConfigured(
+            f"{name} environment variable is required and must be non-empty."
+        )
+    return value
+
+
 def env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
     if value is None:
@@ -25,12 +35,7 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-try:
-    SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-except KeyError as exc:
-    raise ImproperlyConfigured(
-        "DJANGO_SECRET_KEY environment variable is required."
-    ) from exc
+SECRET_KEY = require_env("DJANGO_SECRET_KEY")
 
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 
@@ -80,7 +85,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ.get("POSTGRES_DB", "ubezpieczenia"),
         "USER": os.environ.get("POSTGRES_USER", "ubezpieczenia"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "ubezpieczenia"),
+        "PASSWORD": require_env("POSTGRES_PASSWORD"),
         "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
