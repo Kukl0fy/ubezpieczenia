@@ -30,7 +30,7 @@ addopts = ["-ra"]
 [tool.ruff]
 target-version = "py313"
 line-length = 88
-src = [".", "accounts", "config", "tests"]
+src = [".", "accounts", "config", "customers", "insurers", "tests"]
 exclude = ["**/migrations/**"]
 
 [tool.ruff.lint]
@@ -44,4 +44,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["accounts", "config", "insurers"]
+known-first-party = ["accounts", "config", "customers", "insurers"]

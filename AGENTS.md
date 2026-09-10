@@ -19,7 +19,7 @@ rules for its directory, but must not weaken these rules.
 
 The target architecture is described in `ARCHITECTURE.md`.
 
-### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001)
+### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001)
 
 - Python 3.13
 - Django 5.2 LTS (currently 5.2.17)
@@ -32,6 +32,7 @@ The target architecture is described in `ARCHITECTURE.md`.
 - Login protection: `django-axes` (PostgreSQL-backed attempt limits)
 - Sessions: 8h idle timeout by default, refresh on activity, expire on browser close
 - Dictionaries: `insurers.Insurer` and `insurers.InsuranceType` via Django Admin
+- Customers: `customers.Customer` (person/company register, archive instead of delete)
 
 ### Repository map (implemented)
 
@@ -39,16 +40,17 @@ The target architecture is described in `ARCHITECTURE.md`.
 - `accounts/` — custom `AUTH_USER_MODEL` (`accounts.User`), login/logout,
   private dashboard views
 - `insurers/` — insurer and insurance-type dictionaries (Admin-managed)
+- `customers/` — customer register for persons and companies (Admin-managed)
 - `templates/` — base layout, login, and dashboard templates
-- `tests/` — bootstrap, authentication, CSRF, login-protection, and dictionary
-  tests
+- `tests/` — bootstrap, authentication, CSRF, login-protection, dictionary,
+  and customer tests
 - `compose.yaml`, `Dockerfile` — local Docker Compose stack
 - `.env.example` — sample environment variables (no real secrets)
 - `.github/workflows/ci.yml` — PR/`main` checks
 
-Not implemented yet: `customers`, `policies`, `notifications`, `documents`,
-`audit`, reminders, email, import/export, password-reset email, 2FA, business
-roles beyond Django admin/staff flags, or production hosting.
+Not implemented yet: `policies`, `notifications`, `documents`, `audit`,
+reminders, email, import/export, password-reset email, 2FA, business roles
+beyond Django admin/staff flags, or production hosting.
 
 ### Exact commands
 

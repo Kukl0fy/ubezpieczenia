@@ -9,11 +9,16 @@
       Witaj, <strong>{{ user.get_username }}</strong>.
     </p>
     <p class="muted">
-      Rejestr polis, klientów i przypomnień pojawi się w kolejnych zadaniach.
-      Słowniki ubezpieczycieli i rodzajów ubezpieczeń zarządzasz w Django Admin.
+      Rejestr polis i przypomnień pojawi się w kolejnych zadaniach.
+      Klientów oraz słowniki ubezpieczeń zarządzasz w Django Admin.
     </p>
     <p>
       <a class="button" href="{% url 'admin:index' %}">Otwórz Django Admin</a>
+      {% if perms.customers.view_customer %}
+        <a class="button" href="{% url 'admin:customers_customer_changelist' %}">
+          Klienci
+        </a>
+      {% endif %}
       {% if perms.insurers.view_insurer %}
         <a class="button" href="{% url 'admin:insurers_insurer_changelist' %}">
           Towarzystwa ubezpieczeniowe

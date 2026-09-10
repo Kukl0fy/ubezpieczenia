@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "axes",
     "accounts",
     "insurers",
+    "customers",
 ]
 
 MIDDLEWARE = [
