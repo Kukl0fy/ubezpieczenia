@@ -40,7 +40,6 @@ class AuditEvent(models.Model):
                 fields=["target_type", "target_id"],
                 name="audit_event_target_idx",
             ),
-            models.Index(fields=["actor"], name="audit_event_actor_idx"),
         ]
 
     def __str__(self) -> str:

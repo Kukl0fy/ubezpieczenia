@@ -161,10 +161,14 @@ def test_default_ordering_newest_first(user):
 @pytest.mark.django_db
 def test_model_defines_expected_indexes():
     index_names = {index.name for index in AuditEvent._meta.indexes}
-    assert "audit_event_occurred_at_idx" in index_names
-    assert "audit_event_action_idx" in index_names
-    assert "audit_event_target_idx" in index_names
-    assert "audit_event_actor_idx" in index_names
+    assert index_names == {
+        "audit_event_occurred_at_idx",
+        "audit_event_action_idx",
+        "audit_event_target_idx",
+    }
+    assert "audit_event_actor_idx" not in index_names
+    # ForeignKey still gets Django's default single-column index.
+    assert AuditEvent._meta.get_field("actor").db_index is True
 
 
 @pytest.mark.django_db

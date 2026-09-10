@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 'verbose_name': 'audit event',
                 'verbose_name_plural': 'audit events',
                 'ordering': ['-occurred_at', '-id'],
-                'indexes': [models.Index(fields=['occurred_at'], name='audit_event_occurred_at_idx'), models.Index(fields=['action'], name='audit_event_action_idx'), models.Index(fields=['target_type', 'target_id'], name='audit_event_target_idx'), models.Index(fields=['actor'], name='audit_event_actor_idx')],
+                'indexes': [models.Index(fields=['occurred_at'], name='audit_event_occurred_at_idx'), models.Index(fields=['action'], name='audit_event_action_idx'), models.Index(fields=['target_type', 'target_id'], name='audit_event_target_idx')],
             },
         ),
     ]
