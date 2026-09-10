@@ -122,6 +122,25 @@ def test_postgresql_enforces_case_insensitive_uniqueness():
 
 
 @pytest.mark.django_db
+def test_postgresql_rejects_trimmed_case_insensitive_insurer_duplicate():
+    """DB constraint must reject spaced/cased duplicates even without save()."""
+    Insurer.objects.create(name="Example Insurer")
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Insurer.objects.bulk_create(
+            [Insurer(name="  example insurer  ", is_active=True)]
+        )
+
+
+@pytest.mark.django_db
+def test_postgresql_rejects_trimmed_case_insensitive_type_duplicate():
+    InsuranceType.objects.create(name="Example Type")
+    with pytest.raises(IntegrityError), transaction.atomic():
+        InsuranceType.objects.bulk_create(
+            [InsuranceType(name="  example type  ", is_active=True)]
+        )
+
+
+@pytest.mark.django_db
 def test_is_active_defaults_to_true():
     insurer = Insurer.objects.create(name="Default Active Insurer")
     insurance_type = InsuranceType.objects.create(name="Default Active Type")

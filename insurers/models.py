@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models.functions import Lower
+from django.db.models.functions import Lower, Trim
 from django.utils.translation import gettext_lazy as _
 
 
@@ -49,7 +49,7 @@ class Insurer(NamedDictionaryModel):
         verbose_name_plural = _("insurers")
         constraints = [
             models.UniqueConstraint(
-                Lower("name"),
+                Lower(Trim("name")),
                 name="insurers_insurer_name_ci_uniq",
             ),
         ]
@@ -65,7 +65,7 @@ class InsuranceType(NamedDictionaryModel):
         verbose_name_plural = _("insurance types")
         constraints = [
             models.UniqueConstraint(
-                Lower("name"),
+                Lower(Trim("name")),
                 name="insurers_insurancetype_name_ci_uniq",
             ),
         ]

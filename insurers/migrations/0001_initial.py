@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'insurance types',
                 'ordering': ['name'],
                 'abstract': False,
-                'constraints': [models.UniqueConstraint(django.db.models.functions.text.Lower('name'), name='insurers_insurancetype_name_ci_uniq')],
+                'constraints': [models.UniqueConstraint(django.db.models.functions.text.Lower(django.db.models.functions.text.Trim('name')), name='insurers_insurancetype_name_ci_uniq')],
             },
         ),
         migrations.CreateModel(
@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'insurers',
                 'ordering': ['name'],
                 'abstract': False,
-                'constraints': [models.UniqueConstraint(django.db.models.functions.text.Lower('name'), name='insurers_insurer_name_ci_uniq')],
+                'constraints': [models.UniqueConstraint(django.db.models.functions.text.Lower(django.db.models.functions.text.Trim('name')), name='insurers_insurer_name_ci_uniq')],
             },
         ),
     ]
