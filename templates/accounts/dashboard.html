@@ -9,11 +9,16 @@
       Witaj, <strong>{{ user.get_username }}</strong>.
     </p>
     <p class="muted">
-      Rejestr polis i przypomnień pojawi się w kolejnych zadaniach.
-      Klientów oraz słowniki ubezpieczeń zarządzasz w Django Admin.
+      Przypomnienia pojawią się w kolejnych zadaniach.
+      Rejestr umów, klientów oraz słowniki ubezpieczeń zarządzasz w Django Admin.
     </p>
     <p>
       <a class="button" href="{% url 'admin:index' %}">Otwórz Django Admin</a>
+      {% if perms.policies.view_policy %}
+        <a class="button" href="{% url 'admin:policies_policy_changelist' %}">
+          Polisy
+        </a>
+      {% endif %}
       {% if perms.customers.view_customer %}
         <a class="button" href="{% url 'admin:customers_customer_changelist' %}">
           Klienci
