@@ -44,4 +44,4 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["accounts", "config"]
+known-first-party = ["accounts", "config", "insurers"]

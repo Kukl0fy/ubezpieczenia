@@ -4,8 +4,8 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** private authentication foundation (AUTH-001). Domain modules such
-as customers, policies, and notifications are not implemented yet.
+**Status:** insurer dictionaries (DICT-001). Customers, policies, and
+notifications are not implemented yet.
 
 ## Requirements
 
@@ -70,6 +70,19 @@ the account exists.
 Sessions expire after 8 hours of inactivity by default, are refreshed on
 activity, and end when the browser is closed. Override the idle lifetime with
 `DJANGO_SESSION_COOKIE_AGE` (seconds) in `.env`.
+
+## Dictionaries (insurers)
+
+Insurance companies and insurance types are managed as controlled dictionaries
+in Django Admin (no free-text-per-policy values, no hard delete):
+
+- http://127.0.0.1:8000/admin/insurers/insurer/
+- http://127.0.0.1:8000/admin/insurers/insurancetype/
+
+Create a staff user with the appropriate Django permissions (or a superuser).
+Deactivate unused entries with `is_active` instead of deleting them. The private
+dashboard shows dictionary links only when the signed-in user has the matching
+view permissions.
 
 ## Tests
 
