@@ -62,6 +62,15 @@ docker compose exec web python manage.py createsuperuser
 Logout is available from the dashboard header and must be submitted with
 `POST` (CSRF protected). There is no public sign-up page.
 
+Login attempts are rate-limited with `django-axes` (shared PostgreSQL state):
+5 consecutive failures for the same username + IP combination lock further
+attempts for about 15 minutes. The lockout message does not reveal whether
+the account exists.
+
+Sessions expire after 8 hours of inactivity by default, are refreshed on
+activity, and end when the browser is closed. Override the idle lifetime with
+`DJANGO_SESSION_COOKIE_AGE` (seconds) in `.env`.
+
 ## Tests
 
 ```bash

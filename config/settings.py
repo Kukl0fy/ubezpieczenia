@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import gettext_lazy as _
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,6 +37,28 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def env_positive_int(name: str, *, default: int) -> int:
+    """Return a positive integer from the environment, or the default if unset."""
+    if name not in os.environ:
+        return default
+    raw = os.environ[name]
+    if not raw.strip():
+        raise ImproperlyConfigured(
+            f"{name} environment variable must be a positive integer."
+        )
+    try:
+        value = int(raw.strip())
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            f"{name} environment variable must be a positive integer."
+        ) from exc
+    if value <= 0:
+        raise ImproperlyConfigured(
+            f"{name} environment variable must be a positive integer."
+        )
+    return value
+
+
 SECRET_KEY = require_env("DJANGO_SECRET_KEY")
 
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
@@ -48,6 +72,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "axes",
     "accounts",
 ]
 
@@ -59,6 +84,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -81,6 +112,16 @@ TEMPLATES = [
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
+
+# Session lifetime for an internal office application.
+# Idle timeout defaults to 8 hours, refreshed on activity; browser-close ends
+# the cookie as well. Override age with DJANGO_SESSION_COOKIE_AGE (seconds).
+SESSION_COOKIE_AGE = env_positive_int(
+    "DJANGO_SESSION_COOKIE_AGE",
+    default=8 * 60 * 60,
+)
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 WSGI_APPLICATION = "config.wsgi.application"
 
@@ -124,6 +165,28 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Login attempt protection (django-axes). State is stored in PostgreSQL so it
+# remains effective across multiple application processes.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCK_OUT_AT_FAILURE = True
+AXES_COOLOFF_MESSAGE = _(
+    "Too many failed login attempts. Please try again later."
+)
+AXES_PERMALOCK_MESSAGE = _(
+    "Too many failed login attempts. Please try again later."
+)
+AXES_SENSITIVE_PARAMETERS = [
+    "username",
+    "ip_address",
+    "password",
+    "csrfmiddlewaretoken",
+]
+AXES_DISABLE_ACCESS_LOG = True
+AXES_HTTP_RESPONSE_CODE = 429
 
 # Production-oriented defaults when DEBUG is off.
 if not DEBUG:

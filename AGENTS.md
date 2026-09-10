@@ -29,6 +29,8 @@ The target architecture is described in `ARCHITECTURE.md`.
 - Lint: Ruff
 - CI: GitHub Actions (`.github/workflows/ci.yml`)
 - Auth: Django session authentication, private dashboard, no public registration
+- Login protection: `django-axes` (PostgreSQL-backed attempt limits)
+- Sessions: 8h idle timeout by default, refresh on activity, expire on browser close
 
 ### Repository map (implemented)
 
@@ -36,7 +38,7 @@ The target architecture is described in `ARCHITECTURE.md`.
 - `accounts/` — custom `AUTH_USER_MODEL` (`accounts.User`), login/logout,
   private dashboard views
 - `templates/` — base layout, login, and dashboard templates
-- `tests/` — bootstrap and authentication tests
+- `tests/` — bootstrap, authentication, CSRF, and login-protection tests
 - `compose.yaml`, `Dockerfile` — local Docker Compose stack
 - `.env.example` — sample environment variables (no real secrets)
 - `.github/workflows/ci.yml` — PR/`main` checks
