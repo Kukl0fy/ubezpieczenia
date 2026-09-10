@@ -4,8 +4,8 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** customer register foundation (CUST-001). Policies and notifications
-are not implemented yet.
+**Status:** policy domain model (POL-001). Reminders and dedicated policy UI are
+not implemented yet.
 
 ## Requirements
 
@@ -95,6 +95,18 @@ identifiers in this foundation):
 Staff users need the `customers.view_customer` permission (plus add/change as
 needed) to manage records. The dashboard shows a **Klienci** link only when that
 view permission is present.
+
+## Policies
+
+Policies, parties, and insured objects are managed in Django Admin (no hard
+delete; history-preserving foreign keys):
+
+- http://127.0.0.1:8000/admin/policies/policy/
+- http://127.0.0.1:8000/admin/policies/insuredobject/
+
+Staff users need `policies.view_policy` (and related change permissions) to work
+with policies. The dashboard shows a **Polisy** link only when that view
+permission is present. Transactional renewal and reminders are not available yet.
 
 ## Tests
 
