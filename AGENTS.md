@@ -19,7 +19,7 @@ rules for its directory, but must not weaken these rules.
 
 The target architecture is described in `ARCHITECTURE.md`.
 
-### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001)
+### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001)
 
 - Python 3.13
 - Django 5.2 LTS (currently 5.2.17)
@@ -34,6 +34,7 @@ The target architecture is described in `ARCHITECTURE.md`.
 - Dictionaries: `insurers.Insurer` and `insurers.InsuranceType` via Django Admin
 - Customers: `customers.Customer` (person/company register, archive instead of delete)
 - Policies: `policies` domain model (policy, parties, insured objects; Admin-managed)
+- Audit: append-only `audit.AuditEvent` for significant business/security events
 
 ### Repository map (implemented)
 
@@ -43,13 +44,14 @@ The target architecture is described in `ARCHITECTURE.md`.
 - `insurers/` — insurer and insurance-type dictionaries (Admin-managed)
 - `customers/` — customer register for persons and companies (Admin-managed)
 - `policies/` — policies, parties, insured objects, and policy-object links
+- `audit/` — append-only audit events and auth signal recording
 - `templates/` — base layout, login, and dashboard templates
-- `tests/` — bootstrap, auth, dictionaries, customers, and policies tests
+- `tests/` — bootstrap, auth, dictionaries, customers, policies, and audit tests
 - `compose.yaml`, `Dockerfile` — local Docker Compose stack
 - `.env.example` — sample environment variables (no real secrets)
 - `.github/workflows/ci.yml` — PR/`main` checks
 
-Not implemented yet: `notifications`, `documents`, `audit`, reminders, email,
+Not implemented yet: `notifications`, `documents`, reminders, email,
 import/export, password-reset email, 2FA, transactional renewal workflow,
 business UI beyond Admin, or production hosting.
 

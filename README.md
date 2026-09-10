@@ -4,8 +4,8 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** policy domain model (POL-001). Reminders and dedicated policy UI are
-not implemented yet.
+**Status:** append-only audit foundation (AUDIT-001). Reminders and dedicated
+business UI beyond Django Admin are not implemented yet.
 
 ## Requirements
 
@@ -107,6 +107,22 @@ delete; history-preserving foreign keys):
 Staff users need `policies.view_policy` (and related change permissions) to work
 with policies. The dashboard shows a **Polisy** link only when that view
 permission is present. Transactional renewal and reminders are not available yet.
+
+## Audit
+
+Significant authentication and future business events are stored in an
+append-only audit register:
+
+- http://127.0.0.1:8000/admin/audit/auditevent/
+
+Staff users need `audit.view_auditevent` to browse events. Entries cannot be
+created, edited, or deleted in Admin.
+
+Roles of related mechanisms:
+
+- `django-axes` protects login attempts and stores technical lockout state;
+- `audit.AuditEvent` is the application’s safe history of significant events;
+- Django Admin `LogEntry` records changes made through the Admin UI.
 
 ## Tests
 
