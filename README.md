@@ -4,8 +4,8 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** insurer dictionaries (DICT-001). Customers, policies, and
-notifications are not implemented yet.
+**Status:** customer register foundation (CUST-001). Policies and notifications
+are not implemented yet.
 
 ## Requirements
 
@@ -83,6 +83,18 @@ Create a staff user with the appropriate Django permissions (or a superuser).
 Deactivate unused entries with `is_active` instead of deleting them. The private
 dashboard shows dictionary links only when the signed-in user has the matching
 view permissions.
+
+## Customers
+
+Persons and companies are stored in the customer register and managed in Django
+Admin (archive instead of hard delete; no PESEL/NIP or other highly sensitive
+identifiers in this foundation):
+
+- http://127.0.0.1:8000/admin/customers/customer/
+
+Staff users need the `customers.view_customer` permission (plus add/change as
+needed) to manage records. The dashboard shows a **Klienci** link only when that
+view permission is present.
 
 ## Tests
 
