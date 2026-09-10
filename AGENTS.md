@@ -19,7 +19,7 @@ rules for its directory, but must not weaken these rules.
 
 The target architecture is described in `ARCHITECTURE.md`.
 
-### Confirmed toolchain (BOOT-001)
+### Confirmed toolchain (BOOT-001 / AUTH-001)
 
 - Python 3.13
 - Django 5.2 LTS (currently 5.2.17)
@@ -28,18 +28,22 @@ The target architecture is described in `ARCHITECTURE.md`.
 - Tests: `pytest` + `pytest-django`
 - Lint: Ruff
 - CI: GitHub Actions (`.github/workflows/ci.yml`)
+- Auth: Django session authentication, private dashboard, no public registration
 
 ### Repository map (implemented)
 
 - `config/` — Django project settings, URLs, WSGI/ASGI, `/health/`
-- `accounts/` — custom `AUTH_USER_MODEL` (`accounts.User`) and admin
-- `tests/` — bootstrap tests (settings, user model, health, admin)
+- `accounts/` — custom `AUTH_USER_MODEL` (`accounts.User`), login/logout,
+  private dashboard views
+- `templates/` — base layout, login, and dashboard templates
+- `tests/` — bootstrap and authentication tests
 - `compose.yaml`, `Dockerfile` — local Docker Compose stack
 - `.env.example` — sample environment variables (no real secrets)
 - `.github/workflows/ci.yml` — PR/`main` checks
 
 Not implemented yet: `customers`, `insurers`, `policies`, `notifications`,
-`documents`, `audit`, reminders, email, import/export, or production hosting.
+`documents`, `audit`, reminders, email, import/export, password-reset email,
+2FA, business roles beyond Django admin/staff flags, or production hosting.
 
 ### Exact commands
 
