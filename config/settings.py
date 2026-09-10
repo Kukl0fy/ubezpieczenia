@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "insurers",
     "customers",
     "policies",
+    "audit.apps.AuditConfig",
 ]
 
 MIDDLEWARE = [
