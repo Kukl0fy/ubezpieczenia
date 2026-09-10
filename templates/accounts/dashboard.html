@@ -10,10 +10,20 @@
     </p>
     <p class="muted">
       Rejestr polis, klientów i przypomnień pojawi się w kolejnych zadaniach.
-      Do tego czasu możesz korzystać z panelu administracyjnego Django.
+      Słowniki ubezpieczycieli i rodzajów ubezpieczeń zarządzasz w Django Admin.
     </p>
     <p>
       <a class="button" href="{% url 'admin:index' %}">Otwórz Django Admin</a>
+      {% if perms.insurers.view_insurer %}
+        <a class="button" href="{% url 'admin:insurers_insurer_changelist' %}">
+          Towarzystwa ubezpieczeniowe
+        </a>
+      {% endif %}
+      {% if perms.insurers.view_insurancetype %}
+        <a class="button" href="{% url 'admin:insurers_insurancetype_changelist' %}">
+          Rodzaje ubezpieczeń
+        </a>
+      {% endif %}
     </p>
   </div>
 {% endblock %}
