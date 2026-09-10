@@ -19,19 +19,69 @@ rules for its directory, but must not weaken these rules.
 
 The target architecture is described in `ARCHITECTURE.md`.
 
-At the time this file was created, the repository itself had not yet been
-audited. Before implementing the first feature, the coordinator must update:
+### Confirmed toolchain (BOOT-001)
 
-- the actual framework and dependency versions;
-- the repository directory map;
-- the exact development, test, lint, migration, and build commands;
-- any constraints discovered in existing code;
-- the current implementation status.
+- Python 3.13
+- Django 5.2 LTS (currently 5.2.17)
+- PostgreSQL via Docker Compose (`postgres:17`) and `psycopg`
+- Dependency manager: `uv` with `pyproject.toml` and `uv.lock`
+- Tests: `pytest` + `pytest-django`
+- Lint: Ruff
+- CI: GitHub Actions (`.github/workflows/ci.yml`)
 
-Until that audit is complete, agents must discover commands from repository
-files such as `README`, `pyproject.toml`, lockfiles, container configuration,
-CI workflows, or task runners. Agents must not invent commands or silently
-introduce a second toolchain.
+### Repository map (implemented)
+
+- `config/` — Django project settings, URLs, WSGI/ASGI, `/health/`
+- `accounts/` — custom `AUTH_USER_MODEL` (`accounts.User`) and admin
+- `tests/` — bootstrap tests (settings, user model, health, admin)
+- `compose.yaml`, `Dockerfile` — local Docker Compose stack
+- `.env.example` — sample environment variables (no real secrets)
+- `.github/workflows/ci.yml` — PR/`main` checks
+
+Not implemented yet: `customers`, `insurers`, `policies`, `notifications`,
+`documents`, `audit`, reminders, email, import/export, or production hosting.
+
+### Exact commands
+
+Install dependencies:
+
+```bash
+uv sync
+```
+
+Local Docker Compose (preferred local procedure):
+
+```bash
+cp .env.example .env
+docker compose up --build
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser
+```
+
+Migrations and checks (host, after `uv sync` and a configured `.env`):
+
+```bash
+uv run python manage.py migrate
+uv run python manage.py makemigrations --check --dry-run
+uv run python manage.py check
+```
+
+Tests and lint:
+
+```bash
+uv run pytest
+uv run ruff check .
+```
+
+Compose equivalents:
+
+```bash
+docker compose exec web uv run pytest
+docker compose exec web uv run ruff check .
+```
+
+Agents must use this toolchain. Do not invent a second package manager or
+silently replace Docker Compose, `uv`, pytest, or Ruff.
 
 ## Authority and decision hierarchy
 
