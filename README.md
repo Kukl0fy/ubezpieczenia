@@ -4,8 +4,8 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** early foundation (BOOT-001). Domain modules such as customers,
-policies, and notifications are not implemented yet.
+**Status:** private authentication foundation (AUTH-001). Domain modules such
+as customers, policies, and notifications are not implemented yet.
 
 ## Requirements
 
@@ -46,7 +46,7 @@ Do not use `runserver` in production.
 docker compose exec web python manage.py migrate
 ```
 
-4. Create an administrator:
+4. Create the first administrator (there is no public registration):
 
 ```bash
 docker compose exec web python manage.py createsuperuser
@@ -54,8 +54,22 @@ docker compose exec web python manage.py createsuperuser
 
 5. Open the application:
 
-- Application: http://127.0.0.1:8000/admin/
-- Health endpoint: http://127.0.0.1:8000/health/
+- Login: http://127.0.0.1:8000/login/
+- Private dashboard: http://127.0.0.1:8000/
+- Django Admin: http://127.0.0.1:8000/admin/
+- Health endpoint (public, for monitoring): http://127.0.0.1:8000/health/
+
+Logout is available from the dashboard header and must be submitted with
+`POST` (CSRF protected). There is no public sign-up page.
+
+Login attempts are rate-limited with `django-axes` (shared PostgreSQL state):
+5 consecutive failures for the same username + IP combination lock further
+attempts for about 15 minutes. The lockout message does not reveal whether
+the account exists.
+
+Sessions expire after 8 hours of inactivity by default, are refreshed on
+activity, and end when the browser is closed. Override the idle lifetime with
+`DJANGO_SESSION_COOKIE_AGE` (seconds) in `.env`.
 
 ## Tests
 

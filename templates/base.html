@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ubezpieczenia{% endblock %}</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --text: #1f2933;
+      --muted: #52606d;
+      --border: #d9e2ec;
+      --accent: #243b53;
+      --danger: #9b1c1c;
+      --focus: #486581;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    a { color: var(--accent); }
+    .wrap {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+    header.app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header.app-header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+    .muted { color: var(--muted); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1.25rem;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.35rem;
+      font: inherit;
+      margin-bottom: 1rem;
+    }
+    input:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 1px;
+    }
+    button,
+    .button {
+      display: inline-block;
+      border: 0;
+      border-radius: 0.35rem;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .errorlist {
+      list-style: none;
+      margin: 0 0 1rem;
+      padding: 0.75rem 1rem;
+      background: #fff5f5;
+      border: 1px solid #f5c2c2;
+      border-radius: 0.35rem;
+      color: var(--danger);
+    }
+    .messages {
+      list-style: none;
+      margin: 0 0 1rem;
+      padding: 0;
+    }
+    .messages li {
+      margin-bottom: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.35rem;
+      background: #e3f8ff;
+      border: 1px solid #becfe0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="app-header">
+      <h1>Ubezpieczenia</h1>
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit">Wyloguj</button>
+        </form>
+      {% endif %}
+    </header>
+
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

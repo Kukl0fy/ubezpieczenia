@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Panel — Ubezpieczenia{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h2>Panel główny</h2>
+    <p>
+      Witaj, <strong>{{ user.get_username }}</strong>.
+    </p>
+    <p class="muted">
+      Rejestr polis, klientów i przypomnień pojawi się w kolejnych zadaniach.
+      Do tego czasu możesz korzystać z panelu administracyjnego Django.
+    </p>
+    <p>
+      <a class="button" href="{% url 'admin:index' %}">Otwórz Django Admin</a>
+    </p>
+  </div>
+{% endblock %}
