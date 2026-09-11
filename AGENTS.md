@@ -19,7 +19,7 @@ rules for its directory, but must not weaken these rules.
 
 The target architecture is described in `ARCHITECTURE.md`.
 
-### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001)
+### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002)
 
 - Python 3.13
 - Django 5.2 LTS (currently 5.2.17)
