@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Ustawienia — Dom Finanse{% endblock %}
+{% block wrap_modifier %}wrap--wide{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h2>Ustawienia</h2>
+      <p class="muted">
+        Zarządzaj towarzystwami ubezpieczeniowymi i rodzajami ubezpieczeń
+        używanymi przy polisach.
+      </p>
+    </div>
+  </div>
+
+  {% if can_view_insurers %}
+    <div class="card">
+      <h3>Towarzystwa ubezpieczeniowe</h3>
+      <p class="muted">
+        Firmy ubezpieczeniowe, które możesz wybrać przy tworzeniu polisy.
+      </p>
+      <p>
+        Aktywne pozycje:
+        <strong>{{ active_insurer_count }}</strong>
+      </p>
+      <p class="actions">
+        <a class="button" href="{% url 'insurers:insurer_list' %}">
+          Lista towarzystw
+        </a>
+        {% if can_add_insurer %}
+          <a class="button button--secondary" href="{% url 'insurers:insurer_create' %}">
+            Dodaj towarzystwo
+          </a>
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+
+  {% if can_view_types %}
+    <div class="card">
+      <h3>Rodzaje ubezpieczeń</h3>
+      <p class="muted">
+        Kategorie ochrony, np. mieszkanie, dom, OC lub na życie.
+      </p>
+      <p>
+        Aktywne pozycje:
+        <strong>{{ active_type_count }}</strong>
+      </p>
+      <p class="actions">
+        <a class="button" href="{% url 'insurers:insurance_type_list' %}">
+          Lista rodzajów
+        </a>
+        {% if can_add_type %}
+          <a class="button button--secondary" href="{% url 'insurers:insurance_type_create' %}">
+            Dodaj rodzaj
+          </a>
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+{% endblock %}

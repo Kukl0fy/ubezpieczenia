@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Panel — Ubezpieczenia{% endblock %}
+{% block title %}Panel — Dom Finanse{% endblock %}
 {% block wrap_modifier %}wrap--wide{% endblock %}
 
 {% block content %}
@@ -29,19 +29,9 @@
           Dodaj polisę
         </a>
       {% endif %}
-      {% if perms.insurers.view_insurer %}
-        <a class="button" href="{% url 'admin:insurers_insurer_changelist' %}">
-          Towarzystwa ubezpieczeniowe
-        </a>
-      {% endif %}
-      {% if perms.insurers.view_insurancetype %}
-        <a class="button" href="{% url 'admin:insurers_insurancetype_changelist' %}">
-          Rodzaje ubezpieczeń
-        </a>
-      {% endif %}
-      {% if user.is_staff %}
-        <a class="button button--secondary" href="{% url 'admin:index' %}">
-          Django Admin
+      {% if perms.insurers.view_insurer or perms.insurers.view_insurancetype %}
+        <a class="button" href="{% url 'insurers:settings' %}">
+          Ustawienia
         </a>
       {% endif %}
     </p>
