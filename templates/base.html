@@ -29,6 +29,9 @@
       margin: 0 auto;
       padding: 1.5rem 1rem 3rem;
     }
+    .wrap--wide {
+      max-width: 64rem;
+    }
     header.app-header {
       display: flex;
       justify-content: space-between;
@@ -48,6 +51,34 @@
       border: 1px solid var(--border);
       border-radius: 0.5rem;
       padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .page-header h2,
+    .card h2,
+    .card h3 {
+      margin-top: 0;
+    }
+    .breadcrumb {
+      margin: 0 0 1rem;
+    }
+    .breadcrumb a {
+      font-weight: 600;
+    }
+    .filters__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+      gap: 0.75rem 1rem;
+    }
+    .filters__grid p {
+      margin: 0;
     }
     label {
       display: block;
@@ -55,15 +86,24 @@
       margin-bottom: 0.35rem;
     }
     input[type="text"],
-    input[type="password"] {
+    input[type="password"],
+    input[type="email"],
+    input[type="search"],
+    select,
+    textarea {
       width: 100%;
       padding: 0.6rem 0.75rem;
       border: 1px solid var(--border);
       border-radius: 0.35rem;
       font: inherit;
       margin-bottom: 1rem;
+      background: #fff;
     }
-    input:focus {
+    input:focus,
+    select:focus,
+    textarea:focus,
+    button:focus,
+    .button:focus {
       outline: 2px solid var(--focus);
       outline-offset: 1px;
     }
@@ -79,6 +119,76 @@
       padding: 0.55rem 1rem;
       cursor: pointer;
       text-decoration: none;
+    }
+    .button--secondary {
+      background: #627d98;
+    }
+    .button--danger,
+    button.button--danger {
+      background: var(--danger);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      padding: 0;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th,
+    .data-table td {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .data-table th {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.25rem;
+      background: #d9e2ec;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .badge--muted {
+      background: #f0f4f8;
+      color: var(--muted);
+    }
+    .pagination {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin: 1rem 0;
+    }
+    .detail-list {
+      margin: 0;
+      display: grid;
+      gap: 0.85rem;
+    }
+    .detail-list dt {
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .detail-list dd {
+      margin: 0.15rem 0 0;
+    }
+    .confirm-box--danger {
+      border-color: #f5c2c2;
+    }
+    .empty-state p:last-child {
+      margin-bottom: 0;
     }
     .errorlist {
       list-style: none;
@@ -101,10 +211,15 @@
       background: #e3f8ff;
       border: 1px solid #becfe0;
     }
+    @media (max-width: 40rem) {
+      .page-header {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
+    <div class="wrap {% block wrap_modifier %}{% endblock %}">
     <header class="app-header">
       <h1>Ubezpieczenia</h1>
       {% if user.is_authenticated %}

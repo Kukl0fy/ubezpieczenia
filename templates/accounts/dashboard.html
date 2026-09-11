@@ -10,18 +10,18 @@
     </p>
     <p class="muted">
       Przypomnienia pojawią się w kolejnych zadaniach.
-      Rejestr umów, klientów oraz słowniki ubezpieczeń zarządzasz w Django Admin.
+      Klientów zarządzasz w rejestrze biurowym; polisy i słowniki nadal
+      w Django Admin.
     </p>
-    <p>
-      <a class="button" href="{% url 'admin:index' %}">Otwórz Django Admin</a>
+    <p class="actions">
+      {% if perms.customers.view_customer %}
+        <a class="button" href="{% url 'customers:list' %}">
+          Klienci
+        </a>
+      {% endif %}
       {% if perms.policies.view_policy %}
         <a class="button" href="{% url 'admin:policies_policy_changelist' %}">
           Polisy
-        </a>
-      {% endif %}
-      {% if perms.customers.view_customer %}
-        <a class="button" href="{% url 'admin:customers_customer_changelist' %}">
-          Klienci
         </a>
       {% endif %}
       {% if perms.insurers.view_insurer %}
@@ -32,6 +32,11 @@
       {% if perms.insurers.view_insurancetype %}
         <a class="button" href="{% url 'admin:insurers_insurancetype_changelist' %}">
           Rodzaje ubezpieczeń
+        </a>
+      {% endif %}
+      {% if user.is_staff %}
+        <a class="button button--secondary" href="{% url 'admin:index' %}">
+          Django Admin
         </a>
       {% endif %}
     </p>

@@ -8,5 +8,6 @@ from config.health import healthcheck
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", healthcheck, name="healthcheck"),
+    path("customers/", include("customers.urls")),
     path("", include("accounts.urls")),
 ]

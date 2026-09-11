@@ -4,8 +4,8 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** append-only audit foundation (AUDIT-001). Reminders and dedicated
-business UI beyond Django Admin are not implemented yet.
+**Status:** audited customer management UI (CUST-002). Policy reminders and
+remaining domain UI beyond Django Admin are not implemented yet.
 
 ## Requirements
 
@@ -56,6 +56,7 @@ docker compose exec web python manage.py createsuperuser
 
 - Login: http://127.0.0.1:8000/login/
 - Private dashboard: http://127.0.0.1:8000/
+- Customers: http://127.0.0.1:8000/customers/
 - Django Admin: http://127.0.0.1:8000/admin/
 - Health endpoint (public, for monitoring): http://127.0.0.1:8000/health/
 
@@ -86,15 +87,25 @@ view permissions.
 
 ## Customers
 
-Persons and companies are stored in the customer register and managed in Django
-Admin (archive instead of hard delete; no PESEL/NIP or other highly sensitive
-identifiers in this foundation):
+Persons and companies are managed in a dedicated office UI (archive instead of
+hard delete; no PESEL/NIP or other highly sensitive identifiers):
 
-- http://127.0.0.1:8000/admin/customers/customer/
+- List: http://127.0.0.1:8000/customers/
+- Create: http://127.0.0.1:8000/customers/new/
+- Detail / edit / archive / restore under `/customers/<id>/…`
 
-Staff users need the `customers.view_customer` permission (plus add/change as
-needed) to manage records. The dashboard shows a **Klienci** link only when that
-view permission is present.
+Required Django permissions:
+
+- `customers.view_customer` — list and detail
+- `customers.add_customer` — create
+- `customers.change_customer` — edit, archive, and restore
+
+There is no permanent delete route. Django Admin remains available for
+technical administration, but the dashboard **Klienci** link opens the new UI.
+
+Successful create/update/archive/restore operations record append-only audit
+events (`customer.created`, `customer.updated`, `customer.archived`,
+`customer.restored`) without personal data in the summary.
 
 ## Policies
 
@@ -130,6 +141,12 @@ Roles of related mechanisms:
 docker compose exec web uv run pytest
 ```
 
+Customer UI module only:
+
+```bash
+docker compose exec web uv run pytest tests/test_customer_ui.py
+```
+
 Or with dependencies already installed on the host (PostgreSQL must be reachable
 with the settings from `.env`; set `POSTGRES_HOST=127.0.0.1` when the database
 runs on the host):
@@ -137,6 +154,7 @@ runs on the host):
 ```bash
 uv sync
 uv run pytest
+uv run pytest tests/test_customer_ui.py
 ```
 
 ## Code quality (Ruff)

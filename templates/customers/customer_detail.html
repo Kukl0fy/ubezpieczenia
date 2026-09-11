@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.display_name }} — Ubezpieczenia{% endblock %}
+{% block wrap_modifier %}wrap--wide{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb">
+    <a href="{% url 'customers:list' %}">Klienci</a>
+    <span class="muted">/</span>
+    <span>{{ customer.display_name }}</span>
+  </p>
+
+  <div class="page-header">
+    <div>
+      <h2>{{ customer.display_name }}</h2>
+      <p class="muted">
+        {% if customer.customer_type == "PERSON" %}Osoba{% else %}Firma{% endif %}
+        ·
+        {% if customer.is_archived %}zarchiwizowany{% else %}aktywny{% endif %}
+      </p>
+    </div>
+    <div class="actions">
+      {% if perms.customers.change_customer %}
+        <a class="button" href="{% url 'customers:edit' customer.pk %}">Edytuj</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <dl class="detail-list">
+      <div>
+        <dt>Typ klienta</dt>
+        <dd>{% if customer.customer_type == "PERSON" %}Osoba{% else %}Firma{% endif %}</dd>
+      </div>
+      <div>
+        <dt>Nazwa wyświetlana</dt>
+        <dd>{{ customer.display_name }}</dd>
+      </div>
+      <div>
+        <dt>E-mail</dt>
+        <dd>{{ customer.email|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt>Telefon</dt>
+        <dd>{{ customer.phone|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt>Stan</dt>
+        <dd>
+          {% if customer.is_archived %}Zarchiwizowany{% else %}Aktywny{% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Utworzono</dt>
+        <dd>{{ customer.created_at }}</dd>
+      </div>
+      <div>
+        <dt>Ostatnia aktualizacja</dt>
+        <dd>{{ customer.updated_at }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  {% if perms.customers.change_customer %}
+    {% if customer.is_archived %}
+      <div class="card confirm-box">
+        <h3>Przywróć klienta</h3>
+        <p>Przywrócony klient ponownie pojawi się na liście aktywnych.</p>
+        <form method="post" action="{% url 'customers:restore' customer.pk %}">
+          {% csrf_token %}
+          <button type="submit">Przywróć</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="card confirm-box confirm-box--danger">
+        <h3>Archiwizuj klienta</h3>
+        <p>
+          Archiwizacja ukrywa klienta na domyślnej liście, ale nie usuwa rekordu
+          ani historii. Potwierdź, jeśli chcesz kontynuować.
+        </p>
+        <form method="post" action="{% url 'customers:archive' customer.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="button--danger">Potwierdź archiwizację</button>
+        </form>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -32,7 +32,8 @@ The target architecture is described in `ARCHITECTURE.md`.
 - Login protection: `django-axes` (PostgreSQL-backed attempt limits)
 - Sessions: 8h idle timeout by default, refresh on activity, expire on browser close
 - Dictionaries: `insurers.Insurer` and `insurers.InsuranceType` via Django Admin
-- Customers: `customers.Customer` (person/company register, archive instead of delete)
+- Customers: `customers.Customer` (person/company register, archive instead of
+  delete; office UI with audited create/update/archive/restore)
 - Policies: `policies` domain model (policy, parties, insured objects; Admin-managed)
 - Audit: append-only `audit.AuditEvent` for significant business/security events
 
@@ -42,7 +43,7 @@ The target architecture is described in `ARCHITECTURE.md`.
 - `accounts/` — custom `AUTH_USER_MODEL` (`accounts.User`), login/logout,
   private dashboard views
 - `insurers/` — insurer and insurance-type dictionaries (Admin-managed)
-- `customers/` — customer register for persons and companies (Admin-managed)
+- `customers/` — customer register for persons and companies (office UI + Admin)
 - `policies/` — policies, parties, insured objects, and policy-object links
 - `audit/` — append-only audit events and auth signal recording
 - `templates/` — base layout, login, and dashboard templates
@@ -53,7 +54,7 @@ The target architecture is described in `ARCHITECTURE.md`.
 
 Not implemented yet: `notifications`, `documents`, reminders, email,
 import/export, password-reset email, 2FA, transactional renewal workflow,
-business UI beyond Admin, or production hosting.
+policy business UI beyond Admin, or production hosting.
 
 ### Exact commands
 
