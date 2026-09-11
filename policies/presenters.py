@@ -49,6 +49,44 @@ RENEWED_CANCEL_BLOCKED_MESSAGE = (
     "Polisy odnowionej nie można anulować w tym workflow."
 )
 
+RENEWAL_NOT_ALLOWED_MESSAGE = (
+    "Tej polisy nie można odnowić w obecnym statusie."
+)
+
+RENEWAL_ALREADY_EXISTS_MESSAGE = (
+    "Ta polisa ma już odnowienie. Otwarto istniejącą polisę odnawiającą."
+)
+
+RENEWABLE_STATUSES = frozenset(
+    {
+        Policy.Status.ACTIVE,
+        Policy.Status.EXPIRED,
+    }
+)
+
+
+def can_show_renew_button(*, policy: Policy, user, renewal_policy=None) -> bool:
+    """Whether the detail page should offer creating a renewal."""
+    if not (
+        user.has_perm("policies.view_policy")
+        and user.has_perm("policies.add_policy")
+        and user.has_perm("policies.change_policy")
+    ):
+        return False
+    if policy.status not in RENEWABLE_STATUSES:
+        return False
+    if renewal_policy is not None:
+        return False
+    return True
+
+
+def default_renewal_dates(source: Policy) -> tuple[date, date]:
+    """Suggest coverage dates for a renewal of ``source``."""
+    new_start = source.coverage_end + timedelta(days=1)
+    span_days = (source.coverage_end - source.coverage_start).days
+    new_end = new_start + timedelta(days=span_days)
+    return new_start, new_end
+
 
 def status_label_pl(status: str) -> str:
     return STATUS_LABELS_PL.get(status, status)

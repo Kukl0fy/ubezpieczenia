@@ -8,7 +8,7 @@ This document defines the target architecture of the insurance-policy
 management application. It deliberately describes a small production system,
 not a general insurance platform.
 
-### Confirmed by BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002
+### Confirmed by BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002 / POL-003
 
 - modular Django monolith with `config/`, `accounts/`, `insurers/`,
   `customers/`, `policies/`, and `audit/`
@@ -23,16 +23,16 @@ not a general insurance platform.
 - `Customer` register for persons and companies (office UI with audited
   create/update/archive/restore; Admin remains available; archive instead of
   delete; minimal contact fields only)
-- policy domain model plus office UI for list/create/edit/cancel and an
+- policy domain model plus office UI for list/create/edit/cancel/renew and an
   on-open expiry dashboard (no reminder records, scheduler, or email yet;
-  renewal workflow not implemented)
+  contact-handling not implemented)
 - append-only `AuditEvent` history for significant auth/business events
   (Axes remains the login lockout mechanism; Admin `LogEntry` remains separate)
 
 ### Still planned (not implemented)
 
 - domain modules: `notifications`, `documents`
-- transactional renewal process, reminder records, email, import/export
+- reminder records, email, import/export
 - production deployment, HTTPS termination, backups, and monitoring
 - exact hosting vendor choices (to be recorded separately / as ADRs)
 

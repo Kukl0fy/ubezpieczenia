@@ -11,5 +11,6 @@ urlpatterns = [
     path("new/", views.PolicyCreateView.as_view(), name="create"),
     path("<int:pk>/", views.PolicyDetailView.as_view(), name="detail"),
     path("<int:pk>/edit/", views.PolicyUpdateView.as_view(), name="edit"),
+    path("<int:pk>/renew/", views.PolicyRenewView.as_view(), name="renew"),
     path("<int:pk>/cancel/", views.PolicyCancelView.as_view(), name="cancel"),
 ]
