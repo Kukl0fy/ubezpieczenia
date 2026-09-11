@@ -89,6 +89,20 @@ class CustomerDetailView(CustomerAccessMixin, DetailView):
     template_name = "customers/customer_detail.html"
     context_object_name = "customer"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.has_perm("policies.view_policy"):
+            from policies.presenters import policies_for_customer, status_label_pl
+
+            policies = list(policies_for_customer(self.object.pk))
+            for policy in policies:
+                policy.status_label_pl = status_label_pl(policy.status)
+            context["customer_policies"] = policies
+            context["show_customer_policies"] = True
+        else:
+            context["show_customer_policies"] = False
+        return context
+
 
 class CustomerCreateView(CustomerAccessMixin, CreateView):
     model = Customer

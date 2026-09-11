@@ -61,6 +61,44 @@
     </dl>
   </div>
 
+  {% if show_customer_policies %}
+    <div class="card">
+      <h3>Polisy klienta</h3>
+      {% if customer_policies %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Numer</th>
+                <th scope="col">Ubezpieczyciel</th>
+                <th scope="col">Rodzaj</th>
+                <th scope="col">Status</th>
+                <th scope="col">Koniec</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for policy in customer_policies %}
+                <tr>
+                  <td>
+                    <a href="{% url 'policies:detail' policy.pk %}">
+                      {{ policy.policy_number }}
+                    </a>
+                  </td>
+                  <td>{{ policy.insurer.name }}</td>
+                  <td>{{ policy.insurance_type.name }}</td>
+                  <td>{{ policy.status_label_pl|default:policy.get_status_display }}</td>
+                  <td>{{ policy.coverage_end }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="muted">Brak polis powiązanych z tym klientem.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
   {% if perms.customers.change_customer %}
     {% if customer.is_archived %}
       <div class="card confirm-box">

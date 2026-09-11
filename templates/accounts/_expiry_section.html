@@ -1,0 +1,38 @@
+<div class="card">
+  <h3>{{ title }}</h3>
+  {% if items %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Numer</th>
+            <th scope="col">Klient</th>
+            <th scope="col">Rodzaj</th>
+            <th scope="col">Koniec</th>
+            <th scope="col">Termin</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for policy in items %}
+            <tr>
+              <td>
+                <a href="{% url 'policies:detail' policy.pk %}">{{ policy.policy_number }}</a>
+              </td>
+              <td>{{ policy.primary_customer.display_name|default:"—" }}</td>
+              <td>{{ policy.insurance_type.name }}</td>
+              <td>{{ policy.coverage_end }}</td>
+              <td>
+                {% if mode == "overdue" %}
+                  {{ policy.days_abs }} dni po terminie
+                {% else %}
+                  za {{ policy.days_delta }} dni
+                {% endif %}
+              </td>            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">{{ empty }}</p>
+  {% endif %}
+</div>
