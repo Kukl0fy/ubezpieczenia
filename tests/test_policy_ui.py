@@ -404,8 +404,6 @@ def test_customer_policies_section_and_no_delete_routes(client, viewer, catalog)
 
     with pytest.raises(NoReverseMatch):
         reverse("policies:delete", args=[1])
-    with pytest.raises(NoReverseMatch):
-        reverse("policies:renew", args=[1])
 
 
 @pytest.mark.django_db

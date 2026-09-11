@@ -8,14 +8,16 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from audit.services import record_audit_event
 from customers.models import Customer
 from insurers.models import InsuranceType, Insurer
-from policies.models import Policy, PolicyParty
+from policies.models import Policy, PolicyObject, PolicyParty
 from policies.presenters import (
     COMPLEX_POLICYHOLDERS_MESSAGE,
+    RENEWABLE_STATUSES,
+    RENEWAL_NOT_ALLOWED_MESSAGE,
     RENEWED_CANCEL_BLOCKED_MESSAGE,
 )
 
@@ -29,6 +31,12 @@ TARGET_TYPE = "policies.policy"
 class UpdatePolicyResult:
     policy: Policy
     warning: str | None = None
+
+
+@dataclass(frozen=True)
+class RenewPolicyResult:
+    policy: Policy
+    created: bool
 
 
 def _normalized_values(
@@ -205,3 +213,88 @@ def cancel_policy(
         summary="Policy record cancelled.",
     )
     return locked, True
+
+
+@transaction.atomic
+def renew_policy(
+    *,
+    actor: AbstractBaseUser,
+    source: Policy,
+    policy_number: str,
+    insurer: Insurer,
+    insurance_type: InsuranceType,
+    coverage_start: date,
+    coverage_end: date,
+    premium: Decimal | None = None,
+    currency: str = "PLN",
+    notes: str = "",
+) -> RenewPolicyResult:
+    """Create a renewal policy linked to ``source``, or return the existing one."""
+    locked = Policy.objects.select_for_update().get(pk=source.pk)
+    existing = (
+        Policy.objects.select_for_update()
+        .filter(previous_policy=locked)
+        .order_by("id")
+        .first()
+    )
+    if existing is not None:
+        return RenewPolicyResult(policy=existing, created=False)
+    if locked.status not in RENEWABLE_STATUSES:
+        raise ValidationError(RENEWAL_NOT_ALLOWED_MESSAGE)
+
+    values = _normalized_values(
+        policy_number=policy_number,
+        insurer=insurer,
+        insurance_type=insurance_type,
+        coverage_start=coverage_start,
+        coverage_end=coverage_end,
+        premium=premium,
+        currency=currency,
+        notes=notes,
+    )
+    new_policy = Policy(
+        status=Policy.Status.ACTIVE,
+        previous_policy=locked,
+        **values,
+    )
+    try:
+        with transaction.atomic():
+            new_policy.save()
+    except IntegrityError:
+        existing = (
+            Policy.objects.filter(previous_policy=locked).order_by("id").first()
+        )
+        if existing is None:
+            raise
+        return RenewPolicyResult(policy=existing, created=False)
+
+    for party in locked.parties.order_by("id"):
+        PolicyParty.objects.create(
+            policy=new_policy,
+            customer=party.customer,
+            role=party.role,
+        )
+    for link in locked.policy_objects.order_by("id"):
+        PolicyObject.objects.create(
+            policy=new_policy,
+            insured_object=link.insured_object,
+        )
+
+    locked.status = Policy.Status.RENEWED
+    locked.save(update_fields=["status", "updated_at"])
+
+    record_audit_event(
+        actor=actor,
+        action="policy.renewed",
+        target_type=TARGET_TYPE,
+        target_id=str(locked.pk),
+        summary="Policy record renewed.",
+    )
+    record_audit_event(
+        actor=actor,
+        action="policy.created",
+        target_type=TARGET_TYPE,
+        target_id=str(new_policy.pk),
+        summary="Policy record created.",
+    )
+    return RenewPolicyResult(policy=new_policy, created=True)

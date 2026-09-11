@@ -22,6 +22,9 @@
       {% if perms.policies.change_policy %}
         <a class="button" href="{% url 'policies:edit' policy.pk %}">Edytuj</a>
       {% endif %}
+      {% if show_renew_button %}
+        <a class="button" href="{% url 'policies:renew' policy.pk %}">Odnów polisę</a>
+      {% endif %}
     </div>
   </div>
 

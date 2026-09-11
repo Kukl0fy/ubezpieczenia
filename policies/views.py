@@ -9,13 +9,17 @@ from django.db.models import Prefetch, Q, QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, FormView, ListView, UpdateView
 
 from insurers.models import InsuranceType, Insurer
-from policies.forms import PolicyForm
+from policies.forms import PolicyForm, PolicyRenewalForm
 from policies.models import Policy, PolicyObject, PolicyParty
 from policies.presenters import (
     COMPLEX_POLICYHOLDERS_MESSAGE,
+    RENEWABLE_STATUSES,
+    RENEWAL_ALREADY_EXISTS_MESSAGE,
+    RENEWAL_NOT_ALLOWED_MESSAGE,
+    can_show_renew_button,
     days_until_end,
     list_term_note,
     local_today,
@@ -26,7 +30,7 @@ from policies.presenters import (
     role_label_pl,
     status_label_pl,
 )
-from policies.services import cancel_policy, create_policy, update_policy
+from policies.services import cancel_policy, create_policy, renew_policy, update_policy
 
 
 class PolicyAccessMixin(LoginRequiredMixin, PermissionRequiredMixin):
@@ -128,6 +132,11 @@ class PolicyDetailView(PolicyAccessMixin, DetailView):
         context["days_remaining_abs"] = abs(context["days_remaining"])
         context["status_label_pl"] = status_label_pl(policy.status)
         context["renewal_policy"] = policy.renewal_policies.order_by("id").first()
+        context["show_renew_button"] = can_show_renew_button(
+            policy=policy,
+            user=self.request.user,
+            renewal_policy=context["renewal_policy"],
+        )
         for party in policy.parties.all():
             party.role_label_pl = role_label_pl(party.role)
         for link in policy.policy_objects.all():
@@ -238,3 +247,82 @@ class PolicyCancelView(PolicyAccessMixin, View):
         else:
             messages.info(request, "Polisa była już anulowana.")
         return redirect("policies:detail", pk=policy.pk)
+
+
+class PolicyRenewView(PolicyAccessMixin, FormView):
+    form_class = PolicyRenewalForm
+    template_name = "policies/policy_renew_form.html"
+    permission_required = (
+        "policies.view_policy",
+        "policies.add_policy",
+        "policies.change_policy",
+    )
+
+    def get_source(self) -> Policy:
+        if not hasattr(self, "_source"):
+            self._source = get_object_or_404(
+                Policy.objects.select_related("insurer", "insurance_type"),
+                pk=self.kwargs["pk"],
+            )
+        return self._source
+
+    def _redirect_if_not_renewable(self) -> HttpResponse | None:
+        source = self.get_source()
+        existing = source.renewal_policies.order_by("id").first()
+        if existing is not None:
+            messages.info(self.request, RENEWAL_ALREADY_EXISTS_MESSAGE)
+            return redirect("policies:detail", pk=existing.pk)
+        if source.status not in RENEWABLE_STATUSES:
+            messages.error(self.request, RENEWAL_NOT_ALLOWED_MESSAGE)
+            return redirect("policies:detail", pk=source.pk)
+        return None
+
+    def get(self, request, *args, **kwargs):
+        early = self._redirect_if_not_renewable()
+        if early is not None:
+            return early
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        early = self._redirect_if_not_renewable()
+        if early is not None:
+            return early
+        return super().post(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["source_policy"] = self.get_source()
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["source"] = self.get_source()
+        context["page_title"] = "Odnów polisę"
+        context["submit_label"] = "Zapisz odnowienie"
+        return context
+
+    def form_valid(self, form: PolicyRenewalForm) -> HttpResponse:
+        source = self.get_source()
+        data = form.cleaned_data
+        try:
+            result = renew_policy(
+                actor=self.request.user,
+                source=source,
+                policy_number=data["policy_number"],
+                insurer=data["insurer"],
+                insurance_type=data["insurance_type"],
+                coverage_start=data["coverage_start"],
+                coverage_end=data["coverage_end"],
+                premium=data.get("premium"),
+                currency=data["currency"],
+                notes=data.get("notes") or "",
+            )
+        except ValidationError as exc:
+            message = "; ".join(str(item) for item in exc.messages)
+            messages.error(self.request, message)
+            return redirect("policies:detail", pk=source.pk)
+        if result.created:
+            messages.success(self.request, "Polisa została odnowiona.")
+        else:
+            messages.info(self.request, RENEWAL_ALREADY_EXISTS_MESSAGE)
+        return redirect("policies:detail", pk=result.policy.pk)

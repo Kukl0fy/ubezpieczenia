@@ -4,9 +4,8 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** core policy workflow and on-open expiry dashboard (POL-002).
-Automatic reminder email/background jobs and policy renewal are not
-implemented yet.
+**Status:** transactional policy renewal workflow (POL-003). Automatic reminder
+email/background jobs and contact-handling are not implemented yet.
 
 ## Requirements
 
@@ -115,18 +114,23 @@ Core policy workflow is available in the office UI:
 
 - List: http://127.0.0.1:8000/policies/
 - Create: http://127.0.0.1:8000/policies/new/
-- Detail / edit / cancel under `/policies/<id>/…`
+- Detail / edit / renew / cancel under `/policies/<id>/…`
 
 Required Django permissions:
 
 - `policies.view_policy` — list, detail, and dashboard expiry sections
 - `policies.add_policy` — create
 - `policies.change_policy` — edit and cancel
+- renewal requires `view` + `add` + `change` together
+
+Renewal creates a new `ACTIVE` policy, marks the previous one `RENEWED`, copies
+parties and insured-object links, and keeps history through `previous_policy`.
+A policy can have at most one renewal successor.
 
 The dashboard **Polisy** link opens this UI. Expiry buckets on the dashboard are
 calculated with `timezone.localdate()` (`Europe/Warsaw`) each time the page
 opens. There is no reminder record store, scheduler, or automatic email yet.
-Policy renewal and contact-handling workflows are the next stage.
+Contact-handling workflows are the next stage.
 
 Django Admin remains available for technical administration of parties and
 insured objects.
@@ -165,6 +169,12 @@ Policy UI module only:
 docker compose exec web uv run pytest tests/test_policy_ui.py
 ```
 
+Policy renewal tests:
+
+```bash
+docker compose exec web uv run pytest tests/test_policy_renewal.py
+```
+
 Or with dependencies already installed on the host (PostgreSQL must be reachable
 with the settings from `.env`; set `POSTGRES_HOST=127.0.0.1` when the database
 runs on the host):
@@ -174,6 +184,7 @@ uv sync
 uv run pytest
 uv run pytest tests/test_customer_ui.py
 uv run pytest tests/test_policy_ui.py
+uv run pytest tests/test_policy_renewal.py
 ```
 
 ## Code quality (Ruff)

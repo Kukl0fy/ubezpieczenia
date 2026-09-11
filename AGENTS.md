@@ -19,7 +19,7 @@ rules for its directory, but must not weaken these rules.
 
 The target architecture is described in `ARCHITECTURE.md`.
 
-### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002)
+### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002 / POL-003)
 
 - Python 3.13
 - Django 5.2 LTS (currently 5.2.17)
@@ -34,8 +34,8 @@ The target architecture is described in `ARCHITECTURE.md`.
 - Dictionaries: `insurers.Insurer` and `insurers.InsuranceType` via Django Admin
 - Customers: `customers.Customer` (person/company register, archive instead of
   delete; office UI with audited create/update/archive/restore)
-- Policies: office UI for list/create/edit/cancel plus on-open expiry dashboard;
-  Admin remains for parties/objects and technical work
+- Policies: office UI for list/create/edit/cancel/renew plus on-open expiry
+  dashboard; Admin remains for parties/objects and technical work
 - Audit: append-only `audit.AuditEvent` for significant business/security events
 
 ### Repository map (implemented)
@@ -54,8 +54,8 @@ The target architecture is described in `ARCHITECTURE.md`.
 - `.github/workflows/ci.yml` — PR/`main` checks
 
 Not implemented yet: `notifications`, `documents`, reminder records, email,
-import/export, password-reset email, 2FA, transactional renewal workflow,
-contact-handling workflow, or production hosting.
+import/export, password-reset email, 2FA, contact-handling workflow, or
+production hosting.
 
 ### Exact commands
 
