@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Polisy — Ubezpieczenia{% endblock %}
+{% block wrap_modifier %}wrap--wide{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h2>Polisy</h2>
+      <p class="muted">Rejestr umów ubezpieczenia obsługiwanych przez biuro.</p>
+    </div>
+    {% if perms.policies.add_policy %}
+      <a class="button" href="{% url 'policies:create' %}">Dodaj polisę</a>
+    {% endif %}
+  </div>
+
+  <form class="filters card" method="get" action="{% url 'policies:list' %}">
+    <div class="filters__grid">
+      <p>
+        <label for="id_q">Szukaj</label>
+        <input
+          id="id_q"
+          type="search"
+          name="q"
+          value="{{ q }}"
+          placeholder="Numer, klient lub ubezpieczyciel"
+        >
+      </p>
+      <p>
+        <label for="id_status">Status</label>
+        <select id="id_status" name="status">
+          <option value="">Wszystkie statusy</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </p>
+      <p>
+        <label for="id_insurer">Ubezpieczyciel</label>
+        <select id="id_insurer" name="insurer">
+          <option value="">Wszyscy</option>
+          {% for item in insurers %}
+            <option value="{{ item.pk }}"{% if insurer == item.pk|stringformat:"s" %} selected{% endif %}>
+              {{ item.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </p>
+      <p>
+        <label for="id_insurance_type">Rodzaj ubezpieczenia</label>
+        <select id="id_insurance_type" name="insurance_type">
+          <option value="">Wszystkie rodzaje</option>
+          {% for item in insurance_types %}
+            <option value="{{ item.pk }}"{% if insurance_type == item.pk|stringformat:"s" %} selected{% endif %}>
+              {{ item.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </p>
+    </div>
+    <button type="submit">Filtruj</button>
+  </form>
+
+  {% if policies %}
+    <div class="table-wrap card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Numer</th>
+            <th scope="col">Klient</th>
+            <th scope="col">Ubezpieczyciel</th>
+            <th scope="col">Rodzaj</th>
+            <th scope="col">Początek</th>
+            <th scope="col">Koniec</th>
+            <th scope="col">Status</th>
+            <th scope="col">Składka</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for policy in policies %}
+            <tr>
+              <td>
+                <a href="{% url 'policies:detail' policy.pk %}">{{ policy.policy_number }}</a>
+              </td>
+              <td>{{ policy.primary_customer.display_name|default:"—" }}</td>
+              <td>{{ policy.insurer.name }}</td>
+              <td>{{ policy.insurance_type.name }}</td>
+              <td>{{ policy.coverage_start }}</td>
+              <td>{{ policy.coverage_end }}</td>
+              <td>
+                <span class="badge">{{ policy.status_label_pl }}</span>
+                {% if policy.term_note %}
+                  <span class="muted"> · {{ policy.term_note }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if policy.premium != None %}
+                  {{ policy.premium }} {{ policy.currency }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="pagination" aria-label="Paginacja listy polis">
+        {% if page_obj.has_previous %}
+          <a class="button button--secondary" href="?page={{ page_obj.previous_page_number }}{% if filter_query %}&amp;{{ filter_query }}{% endif %}">
+            Poprzednia
+          </a>
+        {% endif %}
+        <span class="muted">
+          Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+          <a class="button button--secondary" href="?page={{ page_obj.next_page_number }}{% if filter_query %}&amp;{{ filter_query }}{% endif %}">
+            Następna
+          </a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="card empty-state">
+      <p>Brak polis spełniających wybrane kryteria.</p>
+      {% if perms.policies.add_policy %}
+        <p>
+          <a class="button" href="{% url 'policies:create' %}">Dodaj pierwszą polisę</a>
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

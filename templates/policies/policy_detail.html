@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}{{ policy.policy_number }} — Ubezpieczenia{% endblock %}
+{% block wrap_modifier %}wrap--wide{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb">
+    <a href="{% url 'policies:list' %}">Polisy</a>
+    <span class="muted">/</span>
+    <span>{{ policy.policy_number }}</span>
+  </p>
+
+  <div class="page-header">
+    <div>
+      <h2>{{ policy.policy_number }}</h2>
+      <p class="muted">
+        {{ policy.insurer.name }} · {{ policy.insurance_type.name }}
+        · {{ display_state.label }}
+      </p>
+    </div>
+    <div class="actions">
+      {% if perms.policies.change_policy %}
+        <a class="button" href="{% url 'policies:edit' policy.pk %}">Edytuj</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <dl class="detail-list">
+      <div>
+        <dt>Numer polisy</dt>
+        <dd>{{ policy.policy_number }}</dd>
+      </div>
+      <div>
+        <dt>Główny klient</dt>
+        <dd>
+          {% if primary_customer %}
+            {% if perms.customers.view_customer %}
+              <a href="{% url 'customers:detail' primary_customer.pk %}">
+                {{ primary_customer.display_name }}
+              </a>
+            {% else %}
+              {{ primary_customer.display_name }}
+            {% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Ubezpieczyciel</dt>
+        <dd>{{ policy.insurer.name }}</dd>
+      </div>
+      <div>
+        <dt>Rodzaj ubezpieczenia</dt>
+        <dd>{{ policy.insurance_type.name }}</dd>
+      </div>
+      <div>
+        <dt>Okres ochrony</dt>
+        <dd>{{ policy.coverage_start }} — {{ policy.coverage_end }}</dd>
+      </div>
+      <div>
+        <dt>Status w rejestrze</dt>
+        <dd>{{ status_label_pl }}</dd>
+      </div>
+      <div>
+        <dt>Stan względem terminu</dt>
+        <dd>
+          {{ display_state.label }}
+          {% if display_state.code == "overdue" %}
+            ({{ days_remaining_abs }} dni po terminie)
+          {% elif days_remaining >= 0 and policy.status == "ACTIVE" %}
+            ({{ days_remaining }} dni do końca)
+          {% endif %}
+        </dd>
+      </div>      <div>
+        <dt>Składka</dt>
+        <dd>
+          {% if policy.premium != None %}
+            {{ policy.premium }} {{ policy.currency }}
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Notatki</dt>
+        <dd>{{ policy.notes|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt>Poprzednia polisa</dt>
+        <dd>
+          {% if policy.previous_policy %}
+            <a href="{% url 'policies:detail' policy.previous_policy.pk %}">
+              {{ policy.previous_policy.policy_number }}
+            </a>
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Polisa odnawiająca</dt>
+        <dd>
+          {% if renewal_policy %}
+            <a href="{% url 'policies:detail' renewal_policy.pk %}">
+              {{ renewal_policy.policy_number }}
+            </a>
+          {% else %}
+            —
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt>Utworzono</dt>
+        <dd>{{ policy.created_at }}</dd>
+      </div>
+      <div>
+        <dt>Ostatnia aktualizacja</dt>
+        <dd>{{ policy.updated_at }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="card">
+    <h3>Strony polisy</h3>
+    {% if policy.parties.all %}
+      <ul>
+        {% for party in policy.parties.all %}
+          <li>
+            {{ party.role_label_pl }}:
+            {% if perms.customers.view_customer %}
+              <a href="{% url 'customers:detail' party.customer.pk %}">
+                {{ party.customer.display_name }}
+              </a>
+            {% else %}
+              {{ party.customer.display_name }}
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Brak powiązanych stron.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Obiekty ubezpieczenia</h3>
+    {% if policy.policy_objects.all %}
+      <ul>
+        {% for link in policy.policy_objects.all %}
+          <li>
+            {{ link.object_type_label_pl }}:
+            {{ link.insured_object.label }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Brak powiązanych obiektów.</p>
+    {% endif %}
+  </div>
+
+  {% if perms.policies.change_policy and policy.status != "CANCELLED" %}
+    <div class="card confirm-box confirm-box--danger">
+      <h3>Anuluj polisę</h3>
+      {% if policy.status == "RENEWED" %}
+        <p>
+          Tej polisy nie można anulować w tym workflow, ponieważ ma status
+          „odnowiona”.
+        </p>
+      {% else %}
+        <p>
+          Anulowanie zmienia status na „anulowana”, ale nie usuwa polisy ani
+          powiązań. Potwierdź, jeśli chcesz kontynuować.
+        </p>
+        <form method="post" action="{% url 'policies:cancel' policy.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="button--danger">Potwierdź anulowanie</button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

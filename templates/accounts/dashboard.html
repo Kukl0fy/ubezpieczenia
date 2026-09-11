@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Panel — Ubezpieczenia{% endblock %}
+{% block wrap_modifier %}wrap--wide{% endblock %}
 
 {% block content %}
   <div class="card">
@@ -9,9 +10,8 @@
       Witaj, <strong>{{ user.get_username }}</strong>.
     </p>
     <p class="muted">
-      Przypomnienia pojawią się w kolejnych zadaniach.
-      Klientów zarządzasz w rejestrze biurowym; polisy i słowniki nadal
-      w Django Admin.
+      Terminy polis poniżej są wyliczane przy każdym otwarciu strony.
+      Automatyczne e-maile i procesy w tle nie są jeszcze dostępne.
     </p>
     <p class="actions">
       {% if perms.customers.view_customer %}
@@ -20,8 +20,13 @@
         </a>
       {% endif %}
       {% if perms.policies.view_policy %}
-        <a class="button" href="{% url 'admin:policies_policy_changelist' %}">
+        <a class="button" href="{% url 'policies:list' %}">
           Polisy
+        </a>
+      {% endif %}
+      {% if perms.policies.add_policy %}
+        <a class="button" href="{% url 'policies:create' %}">
+          Dodaj polisę
         </a>
       {% endif %}
       {% if perms.insurers.view_insurer %}
@@ -41,4 +46,10 @@
       {% endif %}
     </p>
   </div>
+
+  {% if show_policy_expiry %}
+    {% include "accounts/_expiry_section.html" with title="Po terminie" items=overdue empty="Brak aktywnych polis po terminie." mode="overdue" %}
+    {% include "accounts/_expiry_section.html" with title="Kończą się w ciągu 7 dni" items=within_7 empty="Brak polis kończących się w ciągu 7 dni." mode="soon" %}
+    {% include "accounts/_expiry_section.html" with title="Kończą się w ciągu 30 dni" items=within_30 empty="Brak polis kończących się w dniach 8–30." mode="later" %}
+  {% endif %}
 {% endblock %}

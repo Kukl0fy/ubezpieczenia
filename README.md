@@ -4,8 +4,9 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** audited customer management UI (CUST-002). Policy reminders and
-remaining domain UI beyond Django Admin are not implemented yet.
+**Status:** core policy workflow and on-open expiry dashboard (POL-002).
+Automatic reminder email/background jobs and policy renewal are not
+implemented yet.
 
 ## Requirements
 
@@ -57,6 +58,7 @@ docker compose exec web python manage.py createsuperuser
 - Login: http://127.0.0.1:8000/login/
 - Private dashboard: http://127.0.0.1:8000/
 - Customers: http://127.0.0.1:8000/customers/
+- Policies: http://127.0.0.1:8000/policies/
 - Django Admin: http://127.0.0.1:8000/admin/
 - Health endpoint (public, for monitoring): http://127.0.0.1:8000/health/
 
@@ -109,15 +111,25 @@ events (`customer.created`, `customer.updated`, `customer.archived`,
 
 ## Policies
 
-Policies, parties, and insured objects are managed in Django Admin (no hard
-delete; history-preserving foreign keys):
+Core policy workflow is available in the office UI:
 
-- http://127.0.0.1:8000/admin/policies/policy/
-- http://127.0.0.1:8000/admin/policies/insuredobject/
+- List: http://127.0.0.1:8000/policies/
+- Create: http://127.0.0.1:8000/policies/new/
+- Detail / edit / cancel under `/policies/<id>/…`
 
-Staff users need `policies.view_policy` (and related change permissions) to work
-with policies. The dashboard shows a **Polisy** link only when that view
-permission is present. Transactional renewal and reminders are not available yet.
+Required Django permissions:
+
+- `policies.view_policy` — list, detail, and dashboard expiry sections
+- `policies.add_policy` — create
+- `policies.change_policy` — edit and cancel
+
+The dashboard **Polisy** link opens this UI. Expiry buckets on the dashboard are
+calculated with `timezone.localdate()` (`Europe/Warsaw`) each time the page
+opens. There is no reminder record store, scheduler, or automatic email yet.
+Policy renewal and contact-handling workflows are the next stage.
+
+Django Admin remains available for technical administration of parties and
+insured objects.
 
 ## Audit
 
@@ -147,6 +159,12 @@ Customer UI module only:
 docker compose exec web uv run pytest tests/test_customer_ui.py
 ```
 
+Policy UI module only:
+
+```bash
+docker compose exec web uv run pytest tests/test_policy_ui.py
+```
+
 Or with dependencies already installed on the host (PostgreSQL must be reachable
 with the settings from `.env`; set `POSTGRES_HOST=127.0.0.1` when the database
 runs on the host):
@@ -155,6 +173,7 @@ runs on the host):
 uv sync
 uv run pytest
 uv run pytest tests/test_customer_ui.py
+uv run pytest tests/test_policy_ui.py
 ```
 
 ## Code quality (Ruff)

@@ -621,7 +621,11 @@ def test_admin_access_and_search_filter(
 @pytest.mark.django_db
 def test_dashboard_policy_link_respects_permission(client, staff_user, plain_user):
     client.force_login(staff_user)
-    assert "Polisy" in client.get(reverse("dashboard")).content.decode()
+    content = client.get(reverse("dashboard")).content.decode()
+    assert "Polisy" in content
+    assert reverse("policies:list") in content
+    assert reverse("admin:policies_policy_changelist") not in content
+
     client.force_login(plain_user)
     assert "Polisy" not in client.get(reverse("dashboard")).content.decode()
 
