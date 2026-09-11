@@ -138,12 +138,11 @@ class CustomerArchiveView(CustomerAccessMixin, View):
 
     def post(self, request: HttpRequest, pk: int) -> HttpResponse:
         customer = get_object_or_404(Customer, pk=pk)
-        was_archived = customer.is_archived
-        archive_customer(actor=request.user, customer=customer)
-        if was_archived:
-            messages.info(request, "Klient był już zarchiwizowany.")
-        else:
+        customer, changed = archive_customer(actor=request.user, customer=customer)
+        if changed:
             messages.success(request, "Klient został zarchiwizowany.")
+        else:
+            messages.info(request, "Klient był już zarchiwizowany.")
         return redirect("customers:detail", pk=customer.pk)
 
 
@@ -153,10 +152,9 @@ class CustomerRestoreView(CustomerAccessMixin, View):
 
     def post(self, request: HttpRequest, pk: int) -> HttpResponse:
         customer = get_object_or_404(Customer, pk=pk)
-        was_active = not customer.is_archived
-        restore_customer(actor=request.user, customer=customer)
-        if was_active:
-            messages.info(request, "Klient był już aktywny.")
-        else:
+        customer, changed = restore_customer(actor=request.user, customer=customer)
+        if changed:
             messages.success(request, "Klient został przywrócony.")
+        else:
+            messages.info(request, "Klient był już aktywny.")
         return redirect("customers:detail", pk=customer.pk)

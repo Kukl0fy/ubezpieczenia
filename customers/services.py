@@ -97,34 +97,44 @@ def update_customer(
 
 
 @transaction.atomic
-def archive_customer(*, actor: AbstractBaseUser, customer: Customer) -> Customer:
-    """Archive a customer; no-op (and no audit) when already archived."""
-    if customer.is_archived:
-        return customer
-    customer.is_archived = True
-    customer.save(update_fields=["is_archived", "updated_at"])
+def archive_customer(
+    *,
+    actor: AbstractBaseUser,
+    customer: Customer,
+) -> tuple[Customer, bool]:
+    """Archive a customer under a row lock; audit only when state changes."""
+    locked = Customer.objects.select_for_update().get(pk=customer.pk)
+    if locked.is_archived:
+        return locked, False
+    locked.is_archived = True
+    locked.save(update_fields=["is_archived", "updated_at"])
     record_audit_event(
         actor=actor,
         action="customer.archived",
         target_type=TARGET_TYPE,
-        target_id=str(customer.pk),
+        target_id=str(locked.pk),
         summary="Customer record archived.",
     )
-    return customer
+    return locked, True
 
 
 @transaction.atomic
-def restore_customer(*, actor: AbstractBaseUser, customer: Customer) -> Customer:
-    """Restore a customer; no-op (and no audit) when already active."""
-    if not customer.is_archived:
-        return customer
-    customer.is_archived = False
-    customer.save(update_fields=["is_archived", "updated_at"])
+def restore_customer(
+    *,
+    actor: AbstractBaseUser,
+    customer: Customer,
+) -> tuple[Customer, bool]:
+    """Restore a customer under a row lock; audit only when state changes."""
+    locked = Customer.objects.select_for_update().get(pk=customer.pk)
+    if not locked.is_archived:
+        return locked, False
+    locked.is_archived = False
+    locked.save(update_fields=["is_archived", "updated_at"])
     record_audit_event(
         actor=actor,
         action="customer.restored",
         target_type=TARGET_TYPE,
-        target_id=str(customer.pk),
+        target_id=str(locked.pk),
         summary="Customer record restored.",
     )
-    return customer
+    return locked, True

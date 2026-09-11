@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import threading
 from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.db import connection
 from django.test import Client
 from django.urls import NoReverseMatch, reverse
 
 from audit.models import AuditEvent
 from customers.models import Customer
+from customers.services import archive_customer, restore_customer
 
 User = get_user_model()
 PASSWORD = "safe-test-password-123"
@@ -497,6 +500,100 @@ def test_audit_failure_rolls_back_update(client, editor):
     customer.refresh_from_db()
     assert customer.display_name == "Rollback Update"
     assert _customer_audit_events().count() == 0
+
+
+@pytest.mark.django_db
+def test_audit_failure_rolls_back_archive(client, editor):
+    customer = _customer(display_name="Rollback Archive")
+    client.force_login(editor)
+    with patch(
+        "customers.services.record_audit_event",
+        side_effect=RuntimeError("audit unavailable"),
+    ):
+        with pytest.raises(RuntimeError):
+            client.post(reverse("customers:archive", args=[customer.pk]))
+    customer.refresh_from_db()
+    assert customer.is_archived is False
+    assert _customer_audit_events().count() == 0
+
+
+@pytest.mark.django_db
+def test_audit_failure_rolls_back_restore(client, editor):
+    customer = _customer(display_name="Rollback Restore", is_archived=True)
+    client.force_login(editor)
+    with patch(
+        "customers.services.record_audit_event",
+        side_effect=RuntimeError("audit unavailable"),
+    ):
+        with pytest.raises(RuntimeError):
+            client.post(reverse("customers:restore", args=[customer.pk]))
+    customer.refresh_from_db()
+    assert customer.is_archived is True
+    assert _customer_audit_events().count() == 0
+
+
+def _run_concurrent_state_change(*, actor, customer, operation):
+    barrier = threading.Barrier(2)
+    outcomes: list[bool] = []
+    errors: list[BaseException] = []
+
+    def worker() -> None:
+        try:
+            barrier.wait(timeout=5)
+            _customer, changed = operation(actor=actor, customer=customer)
+            outcomes.append(changed)
+        except BaseException as exc:  # noqa: BLE001 - gather for assertion
+            errors.append(exc)
+        finally:
+            connection.close()
+
+    threads = [threading.Thread(target=worker) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+    assert not errors
+    return outcomes
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_archive_creates_single_audit(editor):
+    customer = _customer(display_name="Concurrent Archive")
+    outcomes = _run_concurrent_state_change(
+        actor=editor,
+        customer=customer,
+        operation=archive_customer,
+    )
+    assert sorted(outcomes) == [False, True]
+    customer.refresh_from_db()
+    assert customer.is_archived is True
+    assert (
+        AuditEvent.objects.filter(
+            action="customer.archived",
+            target_id=str(customer.pk),
+        ).count()
+        == 1
+    )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_concurrent_restore_creates_single_audit(editor):
+    customer = _customer(display_name="Concurrent Restore", is_archived=True)
+    outcomes = _run_concurrent_state_change(
+        actor=editor,
+        customer=customer,
+        operation=restore_customer,
+    )
+    assert sorted(outcomes) == [False, True]
+    customer.refresh_from_db()
+    assert customer.is_archived is False
+    assert (
+        AuditEvent.objects.filter(
+            action="customer.restored",
+            target_id=str(customer.pk),
+        ).count()
+        == 1
+    )
 
 
 @pytest.mark.django_db
