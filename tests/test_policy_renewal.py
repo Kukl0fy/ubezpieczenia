@@ -418,3 +418,91 @@ def test_renew_service_second_call_returns_existing(renewer, catalog):
     assert second.policy.pk == first.policy.pk
     assert Policy.objects.filter(previous_policy=source).count() == 1
     assert _policy_audits().count() == 2
+
+
+@pytest.mark.django_db
+def test_renew_existing_successor_requires_permissions_before_redirect(
+    client, viewer_only, catalog
+):
+    source = _source_policy(catalog, number="PERM-SRC")
+    start, end = default_renewal_dates(source)
+    successor = Policy.objects.create(
+        policy_number="PERM-NEW",
+        insurer=source.insurer,
+        insurance_type=source.insurance_type,
+        coverage_start=start,
+        coverage_end=end,
+        status=Policy.Status.ACTIVE,
+        previous_policy=source,
+        currency="PLN",
+    )
+    source.status = Policy.Status.RENEWED
+    source.save(update_fields=["status", "updated_at"])
+
+    url = reverse("policies:renew", args=[source.pk])
+    anonymous = client.get(url)
+    assert anonymous.status_code == 302
+    assert anonymous["Location"].startswith(reverse("login"))
+    assert str(successor.pk) not in anonymous["Location"]
+
+    client.force_login(viewer_only)
+    assert client.get(url).status_code == 403
+    post = client.post(url, _renew_payload(source, number="PERM-HACK"))
+    assert post.status_code == 403
+
+
+@pytest.mark.django_db
+def test_renew_integrity_error_savepoint_returns_existing(renewer, catalog):
+    """IntegrityError on save must not poison the outer transaction."""
+    from django.db import IntegrityError
+    from django.db.models import QuerySet
+
+    source = _source_policy(catalog, number="IE-SRC")
+    start, end = default_renewal_dates(source)
+    # Successor already exists (race winner); first lookup is forced to miss it.
+    existing = Policy.objects.create(
+        policy_number="IE-EXIST",
+        insurer=source.insurer,
+        insurance_type=source.insurance_type,
+        coverage_start=start,
+        coverage_end=end,
+        status=Policy.Status.ACTIVE,
+        previous_policy=source,
+        currency="PLN",
+    )
+
+    original_first = QuerySet.first
+    state = {"skipped": False}
+
+    def first_race(self, *args, **kwargs):
+        query_text = str(self.query)
+        if "previous_policy" in query_text and not state["skipped"]:
+            state["skipped"] = True
+            return None
+        return original_first(self, *args, **kwargs)
+
+    def save_raises(self, *args, **kwargs):
+        raise IntegrityError("simulated previous_policy unique race")
+
+    with (
+        patch.object(QuerySet, "first", first_race),
+        patch.object(Policy, "save", save_raises),
+    ):
+        result = renew_policy(
+            actor=renewer,
+            source=source,
+            policy_number="IE-NEW",
+            insurer=source.insurer,
+            insurance_type=source.insurance_type,
+            coverage_start=start,
+            coverage_end=end,
+            premium=Decimal("12.00"),
+            currency="PLN",
+            notes="",
+        )
+
+    assert result.created is False
+    assert result.policy.pk == existing.pk
+    assert Policy.objects.filter(previous_policy=source).count() == 1
+    assert Policy.objects.filter(policy_number="IE-NEW").count() == 0
+    assert _policy_audits().count() == 0

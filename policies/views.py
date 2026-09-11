@@ -258,38 +258,56 @@ class PolicyRenewView(PolicyAccessMixin, FormView):
         "policies.change_policy",
     )
 
-    def dispatch(self, request, *args, **kwargs):
-        self.source = get_object_or_404(
-            Policy.objects.select_related("insurer", "insurance_type"),
-            pk=kwargs["pk"],
-        )
-        existing = self.source.renewal_policies.order_by("id").first()
+    def get_source(self) -> Policy:
+        if not hasattr(self, "_source"):
+            self._source = get_object_or_404(
+                Policy.objects.select_related("insurer", "insurance_type"),
+                pk=self.kwargs["pk"],
+            )
+        return self._source
+
+    def _redirect_if_not_renewable(self) -> HttpResponse | None:
+        source = self.get_source()
+        existing = source.renewal_policies.order_by("id").first()
         if existing is not None:
-            messages.info(request, RENEWAL_ALREADY_EXISTS_MESSAGE)
+            messages.info(self.request, RENEWAL_ALREADY_EXISTS_MESSAGE)
             return redirect("policies:detail", pk=existing.pk)
-        if request.method == "GET" and self.source.status not in RENEWABLE_STATUSES:
-            messages.error(request, RENEWAL_NOT_ALLOWED_MESSAGE)
-            return redirect("policies:detail", pk=self.source.pk)
-        return super().dispatch(request, *args, **kwargs)
+        if source.status not in RENEWABLE_STATUSES:
+            messages.error(self.request, RENEWAL_NOT_ALLOWED_MESSAGE)
+            return redirect("policies:detail", pk=source.pk)
+        return None
+
+    def get(self, request, *args, **kwargs):
+        early = self._redirect_if_not_renewable()
+        if early is not None:
+            return early
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        early = self._redirect_if_not_renewable()
+        if early is not None:
+            return early
+        return super().post(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["source_policy"] = self.source
+        kwargs["source_policy"] = self.get_source()
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["source"] = self.source
+        context["source"] = self.get_source()
         context["page_title"] = "Odnów polisę"
         context["submit_label"] = "Zapisz odnowienie"
         return context
 
     def form_valid(self, form: PolicyRenewalForm) -> HttpResponse:
+        source = self.get_source()
         data = form.cleaned_data
         try:
             result = renew_policy(
                 actor=self.request.user,
-                source=self.source,
+                source=source,
                 policy_number=data["policy_number"],
                 insurer=data["insurer"],
                 insurance_type=data["insurance_type"],
@@ -302,7 +320,7 @@ class PolicyRenewView(PolicyAccessMixin, FormView):
         except ValidationError as exc:
             message = "; ".join(str(item) for item in exc.messages)
             messages.error(self.request, message)
-            return redirect("policies:detail", pk=self.source.pk)
+            return redirect("policies:detail", pk=source.pk)
         if result.created:
             messages.success(self.request, "Polisa została odnowiona.")
         else:

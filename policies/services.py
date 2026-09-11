@@ -258,7 +258,8 @@ def renew_policy(
         **values,
     )
     try:
-        new_policy.save()
+        with transaction.atomic():
+            new_policy.save()
     except IntegrityError:
         existing = (
             Policy.objects.filter(previous_policy=locked).order_by("id").first()
