@@ -274,6 +274,8 @@ def test_dashboard_customer_link_respects_permission(client, staff_user, plain_u
     client.force_login(staff_user)
     staff_content = client.get(reverse("dashboard")).content.decode()
     assert "Klienci" in staff_content
+    assert reverse("customers:list") in staff_content
+    assert reverse("admin:customers_customer_changelist") not in staff_content
 
     client.force_login(plain_user)
     plain_content = client.get(reverse("dashboard")).content.decode()

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Klienci — Ubezpieczenia{% endblock %}
+{% block wrap_modifier %}wrap--wide{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h2>Klienci</h2>
+      <p class="muted">Rejestr osób i firm obsługiwanych przez biuro.</p>
+    </div>
+    {% if perms.customers.add_customer %}
+      <a class="button" href="{% url 'customers:create' %}">Dodaj klienta</a>
+    {% endif %}
+  </div>
+
+  <form class="filters card" method="get" action="{% url 'customers:list' %}">
+    <div class="filters__grid">
+      <p>
+        <label for="id_q">Szukaj</label>
+        <input
+          id="id_q"
+          type="search"
+          name="q"
+          value="{{ q }}"
+          placeholder="Nazwa, e-mail lub telefon"
+        >
+      </p>
+      <p>
+        <label for="id_status">Stan</label>
+        <select id="id_status" name="status">
+          <option value="active"{% if status == "active" %} selected{% endif %}>Aktywni</option>
+          <option value="archived"{% if status == "archived" %} selected{% endif %}>Zarchiwizowani</option>
+          <option value="all"{% if status == "all" %} selected{% endif %}>Wszyscy</option>
+        </select>
+      </p>
+      <p>
+        <label for="id_customer_type">Typ klienta</label>
+        <select id="id_customer_type" name="customer_type">
+          <option value="">Wszystkie typy</option>
+          <option value="PERSON"{% if customer_type == "PERSON" %} selected{% endif %}>Osoba</option>
+          <option value="COMPANY"{% if customer_type == "COMPANY" %} selected{% endif %}>Firma</option>
+        </select>
+      </p>
+    </div>
+    <button type="submit">Filtruj</button>
+  </form>
+
+  {% if customers %}
+    <div class="table-wrap card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Nazwa</th>
+            <th scope="col">Typ</th>
+            <th scope="col">E-mail</th>
+            <th scope="col">Telefon</th>
+            <th scope="col">Stan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for customer in customers %}
+            <tr>
+              <td>
+                <a href="{% url 'customers:detail' customer.pk %}">{{ customer.display_name }}</a>
+              </td>
+              <td>
+                {% if customer.customer_type == "PERSON" %}Osoba{% else %}Firma{% endif %}
+              </td>
+              <td>{{ customer.email|default:"—" }}</td>
+              <td>{{ customer.phone|default:"—" }}</td>
+              <td>
+                {% if customer.is_archived %}
+                  <span class="badge badge--muted">Zarchiwizowany</span>
+                {% else %}
+                  <span class="badge">Aktywny</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="pagination" aria-label="Paginacja listy klientów">
+        {% if page_obj.has_previous %}
+          <a class="button button--secondary" href="?page={{ page_obj.previous_page_number }}{% if filter_query %}&amp;{{ filter_query }}{% endif %}">
+            Poprzednia
+          </a>
+        {% endif %}
+        <span class="muted">
+          Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}
+        </span>
+        {% if page_obj.has_next %}
+          <a class="button button--secondary" href="?page={{ page_obj.next_page_number }}{% if filter_query %}&amp;{{ filter_query }}{% endif %}">
+            Następna
+          </a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="card empty-state">
+      <p>Brak klientów spełniających wybrane kryteria.</p>
+      {% if perms.customers.add_customer %}
+        <p>
+          <a class="button" href="{% url 'customers:create' %}">Dodaj pierwszego klienta</a>
+        </p>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} — Ubezpieczenia{% endblock %}
+
+{% block content %}
+  <p class="breadcrumb">
+    <a href="{% url 'customers:list' %}">Klienci</a>
+    <span class="muted">/</span>
+    <span>{{ page_title }}</span>
+  </p>
+
+  <div class="card">
+    <h2>{{ page_title }}</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <ul class="errorlist">
+          {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% for field in form %}
+        <p>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <ul class="errorlist">
+              {% for error in field.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </p>
+      {% endfor %}
+
+      <div class="actions">
+        <button type="submit">{{ submit_label }}</button>
+        <a class="button button--secondary" href="{% if customer %}{% url 'customers:detail' customer.pk %}{% else %}{% url 'customers:list' %}{% endif %}">
+          Anuluj
+        </a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
