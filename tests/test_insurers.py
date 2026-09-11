@@ -230,20 +230,22 @@ def test_admin_search_and_filter(client, staff_user):
 
 
 @pytest.mark.django_db
-def test_dashboard_dictionary_links_respect_permissions(client, staff_user, plain_user):
+def test_dashboard_settings_link_respects_permissions(client, staff_user, plain_user):
     client.force_login(staff_user)
     staff_dashboard = client.get(reverse("dashboard"))
     assert staff_dashboard.status_code == 200
     staff_content = staff_dashboard.content.decode()
-    assert "Towarzystwa ubezpieczeniowe" in staff_content
-    assert "Rodzaje ubezpieczeń" in staff_content
+    assert "Ustawienia" in staff_content
+    assert reverse("insurers:settings") in staff_content
+    assert "/admin/" not in staff_content
+    assert "Django Admin" not in staff_content
 
     client.force_login(plain_user)
     plain_dashboard = client.get(reverse("dashboard"))
     assert plain_dashboard.status_code == 200
     plain_content = plain_dashboard.content.decode()
-    assert "Towarzystwa ubezpieczeniowe" not in plain_content
-    assert "Rodzaje ubezpieczeń" not in plain_content
+    assert "Ustawienia" not in plain_content
+    assert reverse("insurers:settings") not in plain_content
 
 
 @pytest.mark.django_db

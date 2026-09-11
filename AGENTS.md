@@ -19,7 +19,7 @@ rules for its directory, but must not weaken these rules.
 
 The target architecture is described in `ARCHITECTURE.md`.
 
-### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002 / POL-003)
+### Confirmed toolchain (BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002 / POL-003 / UX-001)
 
 - Python 3.13
 - Django 5.2 LTS (currently 5.2.17)
@@ -31,11 +31,12 @@ The target architecture is described in `ARCHITECTURE.md`.
 - Auth: Django session authentication, private dashboard, no public registration
 - Login protection: `django-axes` (PostgreSQL-backed attempt limits)
 - Sessions: 8h idle timeout by default, refresh on activity, expire on browser close
-- Dictionaries: `insurers.Insurer` and `insurers.InsuranceType` via Django Admin
+- Dictionaries: `insurers.Insurer` and `insurers.InsuranceType` via office
+  settings UI (deactivate instead of delete; Admin remains technical fallback)
 - Customers: `customers.Customer` (person/company register, archive instead of
-  delete; office UI with audited create/update/archive/restore)
+ delete; office UI with audited create/update/archive/restore)
 - Policies: office UI for list/create/edit/cancel/renew plus on-open expiry
-  dashboard; Admin remains for parties/objects and technical work
+ dashboard; Admin remains for parties/objects and technical work
 - Audit: append-only `audit.AuditEvent` for significant business/security events
 
 ### Repository map (implemented)
@@ -43,7 +44,7 @@ The target architecture is described in `ARCHITECTURE.md`.
 - `config/` — Django project settings, URLs, WSGI/ASGI, `/health/`
 - `accounts/` — custom `AUTH_USER_MODEL` (`accounts.User`), login/logout,
   private dashboard views
-- `insurers/` — insurer and insurance-type dictionaries (Admin-managed)
+- `insurers/` — insurer and insurance-type settings (office UI + Admin fallback)
 - `customers/` — customer register for persons and companies (office UI + Admin)
 - `policies/` — policies, parties, insured objects; office UI + Admin
 - `audit/` — append-only audit events and auth signal recording

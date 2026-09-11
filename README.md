@@ -4,7 +4,7 @@ Internal web application for managing insurance policies in a small
 real-estate office. The system keeps a trustworthy policy register and will
 support expiration reminders.
 
-**Status:** transactional policy renewal workflow (POL-003). Automatic reminder
+**Status:** office-friendly insurance settings UI (UX-001). Automatic reminder
 email/background jobs and contact-handling are not implemented yet.
 
 ## Requirements
@@ -58,10 +58,11 @@ docker compose exec web python manage.py createsuperuser
 - Private dashboard: http://127.0.0.1:8000/
 - Customers: http://127.0.0.1:8000/customers/
 - Policies: http://127.0.0.1:8000/policies/
-- Django Admin: http://127.0.0.1:8000/admin/
+- Settings (insurers and insurance types): http://127.0.0.1:8000/settings/
+- Django Admin (technical/emergency only): http://127.0.0.1:8000/admin/
 - Health endpoint (public, for monitoring): http://127.0.0.1:8000/health/
 
-Logout is available from the dashboard header and must be submitted with
+Logout is available from the main navigation and must be submitted with
 `POST` (CSRF protected). There is no public sign-up page.
 
 Login attempts are rate-limited with `django-axes` (shared PostgreSQL state):
@@ -73,18 +74,26 @@ Sessions expire after 8 hours of inactivity by default, are refreshed on
 activity, and end when the browser is closed. Override the idle lifetime with
 `DJANGO_SESSION_COOKIE_AGE` (seconds) in `.env`.
 
-## Dictionaries (insurers)
+## Settings (insurers and insurance types)
 
-Insurance companies and insurance types are managed as controlled dictionaries
-in Django Admin (no free-text-per-policy values, no hard delete):
+Insurance companies and insurance types are managed from the ordinary office UI
+under **Ustawienia**. A day-to-day office user does **not** need Django Admin
+for this work.
 
-- http://127.0.0.1:8000/admin/insurers/insurer/
-- http://127.0.0.1:8000/admin/insurers/insurancetype/
+- Settings hub: http://127.0.0.1:8000/settings/
+- Insurers: http://127.0.0.1:8000/settings/insurers/
+- Insurance types: http://127.0.0.1:8000/settings/insurance-types/
 
-Create a staff user with the appropriate Django permissions (or a superuser).
-Deactivate unused entries with `is_active` instead of deleting them. The private
-dashboard shows dictionary links only when the signed-in user has the matching
-view permissions.
+Required Django permissions:
+
+- `insurers.view_insurer` / `insurers.add_insurer` / `insurers.change_insurer`
+- `insurers.view_insurancetype` / `insurers.add_insurancetype` /
+  `insurers.change_insurancetype`
+
+Unused entries are deactivated (`is_active=False`) instead of deleted. Inactive
+entries stay on existing policies but are hidden when creating a new policy.
+Django Admin remains available only as a technical fallback under `/admin/` and
+is not linked from the main navigation or dashboard.
 
 ## Customers
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Ubezpieczenia{% endblock %}</title>
+  <title>{% block title %}Dom Finanse — Ubezpieczenia{% endblock %}</title>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -35,15 +35,54 @@
     header.app-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 1rem;
+      flex-wrap: wrap;
       margin-bottom: 1.5rem;
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--border);
     }
-    header.app-header h1 {
+    .brand {
       margin: 0;
       font-size: 1.25rem;
+    }
+    .brand a {
+      color: inherit;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .brand a:hover,
+    .brand a:focus {
+      text-decoration: underline;
+    }
+    .app-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.75rem;
+      align-items: center;
+    }
+    .app-nav a {
+      font-weight: 600;
+      text-decoration: none;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid transparent;
+      border-radius: 0.35rem;
+    }
+    .app-nav a:hover {
+      border-color: var(--border);
+      background: #fff;
+    }
+    .app-nav a[aria-current="page"] {
+      border-color: var(--accent);
+      background: #fff;
+      text-decoration: underline;
+    }
+    .app-nav form {
+      display: inline;
+      margin: 0;
+    }
+    .app-nav button {
+      padding: 0.35rem 0.55rem;
     }
     .muted { color: var(--muted); }
     .card {
@@ -88,6 +127,7 @@
     input[type="text"],
     input[type="password"],
     input[type="email"],
+    input[type="url"],
     input[type="search"],
     select,
     textarea {
@@ -103,7 +143,9 @@
     select:focus,
     textarea:focus,
     button:focus,
-    .button:focus {
+    .button:focus,
+    .app-nav a:focus,
+    .brand a:focus {
       outline: 2px solid var(--focus);
       outline-offset: 1px;
     }
@@ -215,18 +257,39 @@
       .page-header {
         flex-direction: column;
       }
+      .app-nav {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-    <div class="wrap {% block wrap_modifier %}{% endblock %}">
+  <div class="wrap {% block wrap_modifier %}{% endblock %}">
     <header class="app-header">
-      <h1>Ubezpieczenia</h1>
+      <p class="brand">
+        {% if user.is_authenticated %}
+          <a href="{% url 'dashboard' %}">Dom Finanse — Ubezpieczenia</a>
+        {% else %}
+          Dom Finanse — Ubezpieczenia
+        {% endif %}
+      </p>
       {% if user.is_authenticated %}
-        <form method="post" action="{% url 'logout' %}">
-          {% csrf_token %}
-          <button type="submit">Wyloguj</button>
-        </form>
+        <nav class="app-nav" aria-label="Główna nawigacja">
+          <a href="{% url 'dashboard' %}">Panel główny</a>
+          {% if perms.customers.view_customer %}
+            <a href="{% url 'customers:list' %}">Klienci</a>
+          {% endif %}
+          {% if perms.policies.view_policy %}
+            <a href="{% url 'policies:list' %}">Polisy</a>
+          {% endif %}
+          {% if perms.insurers.view_insurer or perms.insurers.view_insurancetype %}
+            <a href="{% url 'insurers:settings' %}">Ustawienia</a>
+          {% endif %}
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit">Wyloguj</button>
+          </form>
+        </nav>
       {% endif %}
     </header>
 

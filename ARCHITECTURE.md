@@ -8,7 +8,7 @@ This document defines the target architecture of the insurance-policy
 management application. It deliberately describes a small production system,
 not a general insurance platform.
 
-### Confirmed by BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002 / POL-003
+### Confirmed by BOOT-001 / AUTH-001 / DICT-001 / CUST-001 / POL-001 / AUDIT-001 / CUST-002 / POL-002 / POL-003 / UX-001
 
 - modular Django monolith with `config/`, `accounts/`, `insurers/`,
   `customers/`, `policies/`, and `audit/`
@@ -18,8 +18,8 @@ not a general insurance platform.
 - environment-based configuration
 - CI with pytest, Ruff, and migration checks
 - private session authentication with Axes-backed login protection
-- controlled `Insurer` and `InsuranceType` dictionaries (Admin-managed,
-  deactivate instead of delete)
+- controlled `Insurer` and `InsuranceType` entries managed from the office
+  settings UI (deactivate instead of delete; Admin is technical fallback only)
 - `Customer` register for persons and companies (office UI with audited
   create/update/archive/restore; Admin remains available; archive instead of
   delete; minimal contact fields only)
@@ -211,8 +211,9 @@ Responsibilities:
 
 - insurers;
 - insurer contact information;
-- insurance-type dictionaries;
-- activation/deactivation of reference data.
+- insurance types;
+- activation/deactivation of reference data;
+- office settings UI for day-to-day management (Admin is technical fallback).
 
 ### `policies`
 
