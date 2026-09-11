@@ -25,9 +25,48 @@ STATUS_LABELS_PL = {
     Policy.Status.CANCELLED: "Anulowana",
 }
 
+ROLE_LABELS_PL = {
+    PolicyParty.Role.POLICYHOLDER: "Ubezpieczający",
+    PolicyParty.Role.INSURED: "Ubezpieczony",
+    PolicyParty.Role.PAYER: "Płatnik",
+}
+
+OBJECT_TYPE_LABELS_PL = {
+    "PROPERTY": "Nieruchomość",
+    "VEHICLE": "Pojazd",
+    "PERSON": "Osoba",
+    "COMPANY": "Firma",
+    "OTHER": "Inny",
+}
+
+COMPLEX_POLICYHOLDERS_MESSAGE = (
+    "Ta polisa ma więcej niż jednego ubezpieczającego. "
+    "Pozostałe dane można zapisać tutaj, ale zestaw stron polisy "
+    "zarządzaj w Django Admin."
+)
+
+RENEWED_CANCEL_BLOCKED_MESSAGE = (
+    "Polisy odnowionej nie można anulować w tym workflow."
+)
+
 
 def status_label_pl(status: str) -> str:
     return STATUS_LABELS_PL.get(status, status)
+
+
+def role_label_pl(role: str) -> str:
+    return ROLE_LABELS_PL.get(role, role)
+
+
+def object_type_label_pl(object_type: str) -> str:
+    return OBJECT_TYPE_LABELS_PL.get(object_type, object_type)
+
+
+def list_term_note(display_state: PolicyDisplayState) -> str | None:
+    """Extra term hint for lists; omit when it only repeats the status label."""
+    if display_state.code in {"overdue", "expiring_soon"}:
+        return display_state.label
+    return None
 
 
 def local_today() -> date:
@@ -71,6 +110,14 @@ def primary_policyholder(policy: Policy):
     if parties:
         return parties[0].customer
     return None
+
+
+def policyholder_count(policy: Policy) -> int:
+    return sum(
+        1
+        for party in policy.parties.all()
+        if party.role == PolicyParty.Role.POLICYHOLDER
+    )
 
 
 def policies_for_list() -> QuerySet[Policy]:

@@ -128,7 +128,7 @@
       <ul>
         {% for party in policy.parties.all %}
           <li>
-            {{ party.get_role_display }}:
+            {{ party.role_label_pl }}:
             {% if perms.customers.view_customer %}
               <a href="{% url 'customers:detail' party.customer.pk %}">
                 {{ party.customer.display_name }}
@@ -150,7 +150,7 @@
       <ul>
         {% for link in policy.policy_objects.all %}
           <li>
-            {{ link.insured_object.get_object_type_display }}:
+            {{ link.object_type_label_pl }}:
             {{ link.insured_object.label }}
           </li>
         {% endfor %}

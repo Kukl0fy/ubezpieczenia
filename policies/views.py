@@ -15,11 +15,15 @@ from insurers.models import InsuranceType, Insurer
 from policies.forms import PolicyForm
 from policies.models import Policy, PolicyObject, PolicyParty
 from policies.presenters import (
+    COMPLEX_POLICYHOLDERS_MESSAGE,
     days_until_end,
+    list_term_note,
     local_today,
+    object_type_label_pl,
     policies_for_list,
     policy_display_state,
     primary_policyholder,
+    role_label_pl,
     status_label_pl,
 )
 from policies.services import cancel_policy, create_policy, update_policy
@@ -77,8 +81,10 @@ class PolicyListView(PolicyAccessMixin, ListView):
         context["today"] = local_today()
         for policy in context["policies"]:
             policy.primary_customer = primary_policyholder(policy)
-            policy.display_state = policy_display_state(policy, today=context["today"])
+            display_state = policy_display_state(policy, today=context["today"])
+            policy.display_state = display_state
             policy.status_label_pl = status_label_pl(policy.status)
+            policy.term_note = list_term_note(display_state)
         return context
 
 
@@ -122,6 +128,12 @@ class PolicyDetailView(PolicyAccessMixin, DetailView):
         context["days_remaining_abs"] = abs(context["days_remaining"])
         context["status_label_pl"] = status_label_pl(policy.status)
         context["renewal_policy"] = policy.renewal_policies.order_by("id").first()
+        for party in policy.parties.all():
+            party.role_label_pl = role_label_pl(party.role)
+        for link in policy.policy_objects.all():
+            link.object_type_label_pl = object_type_label_pl(
+                link.insured_object.object_type
+            )
         return context
 
 
@@ -170,7 +182,7 @@ class PolicyUpdateView(PolicyAccessMixin, UpdateView):
 
     def form_valid(self, form: PolicyForm) -> HttpResponse:
         data = form.cleaned_data
-        policy = update_policy(
+        result = update_policy(
             actor=self.request.user,
             policy=self.object,
             primary_customer=data["primary_customer"],
@@ -184,7 +196,23 @@ class PolicyUpdateView(PolicyAccessMixin, UpdateView):
             notes=data.get("notes") or "",
         )
         messages.success(self.request, "Dane polisy zostały zapisane.")
-        return redirect("policies:detail", pk=policy.pk)
+        warning = result.warning
+        if warning is None and getattr(form, "complex_policyholders", False):
+            posted = self.request.POST.get("primary_customer")
+            first_holder = (
+                self.object.parties.filter(role=PolicyParty.Role.POLICYHOLDER)
+                .order_by("id")
+                .first()
+            )
+            if (
+                posted
+                and first_holder is not None
+                and str(posted) != str(first_holder.customer_id)
+            ):
+                warning = COMPLEX_POLICYHOLDERS_MESSAGE
+        if warning:
+            messages.warning(self.request, warning)
+        return redirect("policies:detail", pk=result.policy.pk)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

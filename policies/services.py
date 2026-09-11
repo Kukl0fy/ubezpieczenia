@@ -2,23 +2,33 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.utils.translation import gettext_lazy as _
 
 from audit.services import record_audit_event
 from customers.models import Customer
 from insurers.models import InsuranceType, Insurer
 from policies.models import Policy, PolicyParty
+from policies.presenters import (
+    COMPLEX_POLICYHOLDERS_MESSAGE,
+    RENEWED_CANCEL_BLOCKED_MESSAGE,
+)
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser
 
 TARGET_TYPE = "policies.policy"
+
+
+@dataclass(frozen=True)
+class UpdatePolicyResult:
+    policy: Policy
+    warning: str | None = None
 
 
 def _normalized_values(
@@ -114,8 +124,8 @@ def update_policy(
     premium: Decimal | None = None,
     currency: str = "PLN",
     notes: str = "",
-) -> Policy:
-    """Update editable policy fields; audit only when something changes."""
+) -> UpdatePolicyResult:
+    """Update editable policy fields; never rewrite complex POLICYHOLDER sets."""
     policy.refresh_from_db()
     values = _normalized_values(
         policy_number=policy_number,
@@ -129,26 +139,30 @@ def update_policy(
     )
     changed = _changed_field_names(policy=policy, values=values)
 
-    holder = (
-        policy.parties.filter(role=PolicyParty.Role.POLICYHOLDER)
-        .order_by("id")
-        .first()
+    holders = list(
+        policy.parties.filter(role=PolicyParty.Role.POLICYHOLDER).order_by("id")
     )
+    warning: str | None = None
     primary_changed = False
-    if holder is None:
+
+    if len(holders) > 1:
+        # Keep every PolicyParty untouched; simplified UI cannot pick one primary.
+        if primary_customer.pk != holders[0].customer_id:
+            warning = COMPLEX_POLICYHOLDERS_MESSAGE
+    elif not holders:
         PolicyParty.objects.create(
             policy=policy,
             customer=primary_customer,
             role=PolicyParty.Role.POLICYHOLDER,
         )
         primary_changed = True
-    elif holder.customer_id != primary_customer.pk:
-        holder.customer = primary_customer
-        holder.save()
+    elif holders[0].customer_id != primary_customer.pk:
+        holders[0].customer = primary_customer
+        holders[0].save()
         primary_changed = True
 
     if not changed and not primary_changed:
-        return policy
+        return UpdatePolicyResult(policy=policy, warning=warning)
 
     for name, value in values.items():
         setattr(policy, name, value)
@@ -158,14 +172,15 @@ def update_policy(
     audit_fields = list(changed)
     if primary_changed:
         audit_fields.append("primary_customer")
-    record_audit_event(
-        actor=actor,
-        action="policy.updated",
-        target_type=TARGET_TYPE,
-        target_id=str(policy.pk),
-        summary=f"Updated fields: {', '.join(audit_fields)}.",
-    )
-    return policy
+    if audit_fields:
+        record_audit_event(
+            actor=actor,
+            action="policy.updated",
+            target_type=TARGET_TYPE,
+            target_id=str(policy.pk),
+            summary=f"Updated fields: {', '.join(audit_fields)}.",
+        )
+    return UpdatePolicyResult(policy=policy, warning=warning)
 
 
 @transaction.atomic
@@ -177,9 +192,7 @@ def cancel_policy(
     """Cancel a policy under a row lock; refuse RENEWED; audit only on change."""
     locked = Policy.objects.select_for_update().get(pk=policy.pk)
     if locked.status == Policy.Status.RENEWED:
-        raise ValidationError(
-            _("Renewed policies cannot be cancelled in this workflow.")
-        )
+        raise ValidationError(RENEWED_CANCEL_BLOCKED_MESSAGE)
     if locked.status == Policy.Status.CANCELLED:
         return locked, False
     locked.status = Policy.Status.CANCELLED

@@ -89,8 +89,11 @@
               <td>{{ policy.coverage_end }}</td>
               <td>
                 <span class="badge">{{ policy.status_label_pl }}</span>
-                <span class="muted"> · {{ policy.display_state.label }}</span>
-              </td>              <td>
+                {% if policy.term_note %}
+                  <span class="muted"> · {{ policy.term_note }}</span>
+                {% endif %}
+              </td>
+              <td>
                 {% if policy.premium != None %}
                   {{ policy.premium }} {{ policy.currency }}
                 {% else %}

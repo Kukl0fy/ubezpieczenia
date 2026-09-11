@@ -26,6 +26,9 @@
         <p>
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field }}
+          {% if field.help_text %}
+            <span class="muted">{{ field.help_text }}</span>
+          {% endif %}
           {% if field.errors %}
             <ul class="errorlist">
               {% for error in field.errors %}

@@ -294,13 +294,17 @@ def test_cancel_idempotent_csrf_get_and_renewed_block(
     assert active.status == Policy.Status.ACTIVE
 
     renewed = _make_policy(catalog, number="CAN-3", status=Policy.Status.RENEWED)
-    response = client.post(reverse("policies:cancel", args=[renewed.pk]))
-    assert response.status_code == 302
+    response = client.post(
+        reverse("policies:cancel", args=[renewed.pk]),
+        follow=True,
+    )
+    assert response.status_code == 200
     renewed.refresh_from_db()
     assert renewed.status == Policy.Status.RENEWED
     assert not _policy_audits().filter(
         action="policy.cancelled", target_id=str(renewed.pk)
     ).exists()
+    assert "Polisy odnowionej nie można anulować" in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -414,3 +418,135 @@ def test_list_avoids_n_plus_one(client, viewer, catalog):
     assert response.status_code == 200
     # Auth/session + one main policy query with joins/prefetch; keep bounded.
     assert len(ctx) < 20
+
+
+@pytest.mark.django_db
+def test_polish_labels_and_renewed_cancel_message(client, viewer, editor, catalog):
+    from policies.models import InsuredObject, PolicyObject
+    from policies.presenters import RENEWED_CANCEL_BLOCKED_MESSAGE
+
+    policy = _make_policy(catalog, number="PL-LABELS", end_offset=3)
+    insured = InsuredObject.objects.create(
+        object_type=InsuredObject.ObjectType.PROPERTY,
+        label="Synthetic Flat",
+    )
+    PolicyObject.objects.create(policy=policy, insured_object=insured)
+    PolicyParty.objects.create(
+        policy=policy,
+        customer=Customer.objects.create(
+            customer_type=Customer.CustomerType.PERSON,
+            display_name="Payer Person",
+        ),
+        role=PolicyParty.Role.PAYER,
+    )
+
+    client.force_login(viewer)
+    content = client.get(
+        reverse("policies:detail", args=[policy.pk])
+    ).content.decode()
+    assert "Ubezpieczający" in content
+    assert "Płatnik" in content
+    assert "Nieruchomość" in content
+    assert ">Policyholder<" not in content
+    assert ">Property<" not in content
+
+    list_content = client.get(reverse("policies:list")).content.decode()
+    assert "Aktywna · Aktywna" not in list_content
+    soon = _make_policy(catalog, number="PL-SOON", end_offset=2)
+    soon_list = client.get(reverse("policies:list")).content.decode()
+    assert soon.policy_number in soon_list
+    assert "Kończy się wkrótce" in soon_list
+
+    client.force_login(editor)
+    renewed = _make_policy(catalog, number="PL-REN", status=Policy.Status.RENEWED)
+    cancel_page = client.post(
+        reverse("policies:cancel", args=[renewed.pk]),
+        follow=True,
+    )
+    assert RENEWED_CANCEL_BLOCKED_MESSAGE in cancel_page.content.decode()
+
+
+@pytest.mark.django_db
+def test_complex_policyholders_edit_keeps_parties(client, editor, catalog):
+    from policies.presenters import COMPLEX_POLICYHOLDERS_MESSAGE
+    from policies.services import update_policy
+
+    second = Customer.objects.create(
+        customer_type=Customer.CustomerType.COMPANY,
+        display_name="Second Holder Co",
+    )
+    third = Customer.objects.create(
+        customer_type=Customer.CustomerType.PERSON,
+        display_name="Third Attempt",
+    )
+    policy = _make_policy(catalog, number="MULTI-H")
+    PolicyParty.objects.create(
+        policy=policy,
+        customer=second,
+        role=PolicyParty.Role.POLICYHOLDER,
+    )
+    holder_ids_before = set(
+        policy.parties.filter(role=PolicyParty.Role.POLICYHOLDER).values_list(
+            "id", "customer_id"
+        )
+    )
+
+    client.force_login(editor)
+    edit_url = reverse("policies:edit", args=[policy.pk])
+    form_page = client.get(edit_url)
+    assert form_page.status_code == 200
+    assert COMPLEX_POLICYHOLDERS_MESSAGE in form_page.content.decode()
+
+    response = client.post(
+        edit_url,
+        {
+            "primary_customer": third.pk,
+            "policy_number": "MULTI-H",
+            "insurer": catalog["insurer"].pk,
+            "insurance_type": catalog["insurance_type"].pk,
+            "coverage_start": str(policy.coverage_start),
+            "coverage_end": str(policy.coverage_end),
+            "premium": "100.00",
+            "currency": "PLN",
+            "notes": "safe note",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+    assert COMPLEX_POLICYHOLDERS_MESSAGE in response.content.decode()
+    policy.refresh_from_db()
+    assert policy.notes == "safe note"
+    holder_ids_after = set(
+        policy.parties.filter(role=PolicyParty.Role.POLICYHOLDER).values_list(
+            "id", "customer_id"
+        )
+    )
+    assert holder_ids_after == holder_ids_before
+    assert policy.parties.count() == 2
+    event = _policy_audits().get(action="policy.updated")
+    assert event.summary == "Updated fields: notes."
+    assert "primary_customer" not in event.summary
+
+    result = update_policy(
+        actor=editor,
+        policy=policy,
+        primary_customer=third,
+        policy_number=policy.policy_number,
+        insurer=policy.insurer,
+        insurance_type=policy.insurance_type,
+        coverage_start=policy.coverage_start,
+        coverage_end=policy.coverage_end,
+        premium=policy.premium,
+        currency=policy.currency,
+        notes=policy.notes,
+    )
+    assert result.warning == COMPLEX_POLICYHOLDERS_MESSAGE
+    assert (
+        set(
+            policy.parties.filter(role=PolicyParty.Role.POLICYHOLDER).values_list(
+                "id", "customer_id"
+            )
+        )
+        == holder_ids_before
+    )
+    assert _policy_audits().filter(action="policy.updated").count() == 1

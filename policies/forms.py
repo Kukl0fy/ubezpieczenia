@@ -8,6 +8,7 @@ from django.db.models import Q, QuerySet
 from customers.models import Customer
 from insurers.models import InsuranceType, Insurer
 from policies.models import Policy, PolicyParty
+from policies.presenters import COMPLEX_POLICYHOLDERS_MESSAGE
 
 
 def _active_customers_including(pk: int | None) -> QuerySet[Customer]:
@@ -80,14 +81,16 @@ class PolicyForm(forms.ModelForm):
         super().__init__(*args, instance=instance, **kwargs)
 
         holder_customer_id = None
+        self.complex_policyholders = False
         if instance is not None:
-            holder = (
-                instance.parties.filter(role=PolicyParty.Role.POLICYHOLDER)
-                .order_by("id")
-                .first()
+            holders = list(
+                instance.parties.filter(role=PolicyParty.Role.POLICYHOLDER).order_by(
+                    "id"
+                )
             )
-            if holder is not None:
-                holder_customer_id = holder.customer_id
+            self.complex_policyholders = len(holders) > 1
+            if holders:
+                holder_customer_id = holders[0].customer_id
                 self.fields["primary_customer"].initial = holder_customer_id
 
         self.fields["primary_customer"].queryset = _active_customers_including(
@@ -106,6 +109,10 @@ class PolicyForm(forms.ModelForm):
         self.fields["primary_customer"].empty_label = "Wybierz klienta"
         self.fields["premium"].required = False
         self.fields["notes"].required = False
+
+        if self.complex_policyholders:
+            self.fields["primary_customer"].disabled = True
+            self.fields["primary_customer"].help_text = COMPLEX_POLICYHOLDERS_MESSAGE
 
     def clean_policy_number(self) -> str:
         value = (self.cleaned_data.get("policy_number") or "").strip()
